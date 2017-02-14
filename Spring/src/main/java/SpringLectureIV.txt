@@ -1,0 +1,156 @@
+Struts2整合Spring4:
+1. 拷贝jar(Spring4的21个jar + Struts2 + struts2-spring-plugin.xx.jar).
+2. web.xml:
+   -- 配置Spring的核心监听器ContextLoaderListener (监听tomcat一启动就创建Spring容器)
+       默认会到WEB-INF/applicationContext.xml文件.
+
+   -- 配置Struts2的核心过滤器StrutsPrepareAndExecuteFilter
+       默认会到src/struts.xml文件.
+
+  Action组件需要注入业务层bean,只需要在Action类中提供相应的setXxxx方法
+     xxxx 与 Spring容器中的bean的id一样就可以自动装配.
+
+Spring4整合Hibernate4:
+1. 拷贝jar(Spring4的21个jar + Hibernate4(required、jpa、c3p0、mysql-connector-java.xx.jar)).
+2. web.xml:
+   -- 配置Spring的核心监听器ContextLoaderListener (监听tomcat一启动就创建Spring容器)
+       默认会到WEB-INF/applicationContext.xml文件.
+
+3. 在applicationContext.xml配置整合Hibernate:
+   -- 配置dataSource (c3p0)
+   -- 配置SessionFactory
+        -- setDataSource
+	-- setConfigLocation("hibernate.cfg.xml")
+
+   Hibernate的基础Dao 继承 HibernateDaoSupport.(setSessionFactory)
+
+
+AOP编程(面向切面编程、面向方面编程).
+Spring核心：IoC(DI)、AOP.
+AOP是Aspect Orient Programing，面向切面编程(面向方面编程).
+AspectJ是一个基于Java语言的AOP框架.
+-- aspectjweaver.jar
+
+aop切面编程步骤：
+1. 拷贝jar(aopalliance-1.0.jar(规范也就是接口)、aspectjweaver.jar(aop实现商))
+
+2. 引入aop命名空间.
+   xmlns:aop="http://www.springframework.org/schema/aop"
+   xsi:schemaLocation="http://www.springframework.org/schema/aop
+        	       http://www.springframework.org/schema/aop/spring-aop-4.1.xsd
+
+3. 配置：
+   <aop:config> ： aop配置信息根元素.
+     -- <aop:pointcut expression="" id=""/> : 配置切入点表达式.(指定切哪些包下的哪些类哪些方法).
+
+     -- <aop:advisor advice-ref=""/> : 配置切面Bean(Spring容器中已存在的切面Bean)(切面方法)
+
+     -- <aop:aspect/> : 配置一个普通bean，把它转化成切面bean.
+
+
+ 
+Spring4整合Hiberante4事务控制：
+  -- Spring4为持久层框架提供很多种事务策略(PlatformTransactionManager事务策略接口):
+     DataSourceTransactionManager针对JDBC技术的事务实现
+     JtaTransactionManager针对Jta技术的事务实现 Java Transansation Api
+      jta: 全局事务(分布式事务)，可以跨数据库做事务(ejb容器的支持) jboss weblogic.
+      jdbc: 局部事务(单个数据库) web容器 tomcat
+
+     HibernateTransactionManager针对Hibernate技术的事务实现
+     JdoTransactionManager针对Jdo技术的事务实现
+     JpaTransactionManager针对Jpa技术的事务实现
+
+
+-- 拷贝jar(aopalliance-1.0.jar(规范也就是接口)、aspectjweaver.jar(aop实现商))
+
+-- 配置事务管理器(HibernateTransactionManager).
+   事务控制：事务开启、提交事务(commit)、回滚事务(rollback).
+
+-- 配置事务切面Bean.(声明式事务配置)
+   引用tx命名空间.
+
+    <!-- 配置事务切面Bean (声明式事务)
+    	transaction-manager : 引用容器中存的事务管理器Bean
+    -->
+	<tx:advice id="txAdvice" transaction-manager="transactionManager">
+		<!-- 配置事务属性 -->
+		<tx:attributes>
+			<!-- 以set方法开头的只能做查询 read-only:true 没有开启事务 -->
+			<tx:method name="set*" read-only="true"/>
+			<!-- 以get方法开头的只能做查询 read-only:true 没有开启事务 -->
+			<tx:method name="get*" read-only="true"/>
+			<!-- 剩余的方法可以做CRUD  read-only:false 开启事务 -->
+			<tx:method name="*" read-only="false"/>
+		</tx:attributes>
+	</tx:advice>
+	
+
+    
+
+-- 事务切面配置(切面Bean运用到哪个切入点)
+   引用aop命名空间.
+
+   事务切面切业务层方法.(因为业务处理时需要调用多个dao)
+   -- 切业务层接口中的方法.
+   -- 切业务层接口实现类中的方法.
+
+   <aop:config>
+		<!-- 定义切入点表达式 -->
+		<aop:pointcut expression="execution(* cn.itcast.sh.service.*.*.*(..))" id="pointcut"/>
+		<!-- 把切面bean 运用到指定的切入点 -->
+		<aop:advisor advice-ref="txAdvice" pointcut-ref="pointcut"/>
+	</aop:config>
+
+   一个Dao类只对一张表做CRUD操作(不能跨多个数据库表操作).
+
+
+SSH整合: Struts2 + Spring4 + Hiberante4.
+1. 拷贝jar(Spring(21个jar + aopalliance + 、aspectjweaver)、
+	Struts2、struts2-spring-plugin.xx.jar、
+	Hibernate4(required、jpa、c3p0)、mysql驱动)
+
+2. 修改web.xml文件：
+   -- 配置Spring核心监听器ContextLoaderListener (创建Spring容器)
+      /WEB-INF/applicationContext.xml.
+   
+   -- 配置Struts2核心过滤器StrutsPrepareAndExecuteFilter (拦截所有的请求)
+      /src/struts.xml.
+
+3. 在applicationContext.xml文件中配置整合Hibernate4.
+   -- 配置数据源(dataSource)
+   -- 配置SessionFactory (hibernate.cfg.xml)
+   -- 配置事务管理器HibernateTransactionManager.
+   -- 配置事务切面bean (tx:advice)
+   -- 事务切面配置(aop:config)
+
+4. 项目分包.
+
+5. 写持久化类. (生成表 + 插入sql语句)
+
+6. 写基础dao(接口与实现类)
+7. 写操作持久化类的dao (接口与实现类) 
+
+8. 写业务层类(接口与实现类)
+
+9. 定义一个异常类(RuntimeException)
+
+10. 写一个Action(对一张表做所有的操作)
+   
+11. 配置ContextLoaderListener加载多个Spring配置文件.
+    web.xml : 
+	<!-- 指定Spring需要加载的配置文件 -->
+	<context-param>
+		<!-- 指定参数名 -->
+		<param-name>contextConfigLocation</param-name>
+		<!-- 指定参数值 -->
+		<!-- <param-value>/WEB-INF/applicationContext.xml,
+					/WEB-INF/applicationContext-dao.xml,
+					/WEB-INF/applicationContext-service.xml</param-value> -->
+		<param-value>/WEB-INF/applicationContext*.xml</param-value>
+	</context-param>
+     
+12. 配置dao层Bean、业务层的Bean.
+    
+    jsp --> action --> service --> dao (程序员) 从满足客户需求写
+          
+    dao --> service --> action -- jsp (架构师)

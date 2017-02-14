@@ -1,0 +1,40 @@
+1. 公告查询.
+   -- 把数据在jsp页面显示出来.
+   -- 分页.(分页标签)
+
+   dao层：统计查询  与 分页查询.
+
+2. 添加公告：
+   -- addNotie.jsp页面
+   -- 加上tinyMCE 富文本编辑器.
+   -- 做表单输入校验.
+   -- 防表单重复提交.
+      a. 加防表单重复提交的拦截器.(token)
+         <interceptor-ref name="token"/>
+
+      b. 在addNotice.jsp页面添加<s:token/>.
+
+      c. 表单重复提交时需要的视图
+         <result name="invalid.token">/WEB-INF/jsp/addNotice.jsp</result>
+
+      d. 在addNotice.jsp页面输出提示信息.
+         <s:actionerror/>
+
+      e. 提示信息国际化.
+         <constant name="struts.custom.i18n.resources" value="ssh_messages"/>
+	  struts.messages.invalid.token
+
+   -- 后台输入校验.
+      action的类名-xxx-validation.xml
+      NoticeAction-addNotice-validation.xml
+
+      后台输入校验失败时需要找的视图
+      <result name="input">/WEB-INF/jsp/addNotice.jsp</result>
+   
+      在addNotice.jsp页面输出提示信息.
+      <s:fielderror/>
+      
+3. 修改公告.
+   -- 跳转到修改的页面
+
+   -- 

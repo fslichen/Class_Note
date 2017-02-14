@@ -1,0 +1,175 @@
+1.Spring的资源访问:用来访问外部的资源文件
+  xx.properties属性
+  xx.xml文件
+  第一种方式(配置文件)：
+  public void setResource(Resource resource) {
+  }
+  <property name="resource" value="jdbc.properties"/>
+
+  第二种方式(两个实现类)：
+  Resource resource = new ClassPathResource("jdbc.properties");
+  Resource resource = new FileSystemResource("F:/xxx/jdbc.properties");
+
+2. Spring加载属性配置
+   -- PropertyPlaceholderConfigurer : 属性占位符配置.
+      <bean class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer"
+   		p:locations="#{new String[]{'jdbc.properties','jdbc2.properties'}}"/>
+      
+      context:property-placeholder: 简化配置
+      <context:property-placeholder location="jdbc.properties,jdbc2.properties"/>
+
+   -- PropertyOverrideConfigurer : 属性重写配置.
+      <bean class="org.springframework.beans.factory.config.PropertyOverrideConfigurer"
+   		p:locations="#{new String[]{'jdbc.properties','jdbc2.properties'}}"/>
+
+      context:property-override简化配置:
+      <context:property-override location="jdbc.properties,jdbc2.properties"/> 
+
+3.Spring的零配置
+  java + properties
+  java + xml (dtd、schema) 天作之合.
+
+  java + xml + annotation.
+  
+  配置Bean四个注解
+  @Component普通组件
+  @Controller控制器组件 (springmvc)
+  @Service业务组件
+  @Repository仓储(数据访问)
+
+  配置依赖注入
+  @Resource配置依赖注入
+  @Autowired与@Qualifier
+
+  @Scope指定Bean的作用域 : <bean scope="singleton|prototype|request|session"/>
+  @Lazy延迟初始化: <bean lazy-init=""/>
+  @PostConstruct: <bean init-method=""/> // 初始化
+  @PreDestroy:: <bean destory-method=""/> // 消毁前
+
+   <!-- 开启组件扫描(告诉Spring用了注解) 
+   	 它会到基础包下扫描用
+   	  @Component("bean的id")普通组件
+      @Controller控制器组件
+      @Service业务组件
+      @Repository仓储(数据访问)
+                  注解的bean,扫描到后创建它们的对象，交由Spring容器管理
+   -->
+   <context:component-scan base-package="cn.itcast.spring"/>
+   
+
+
+Struts2整合Spring4:
+ -- 由于Struts2框架在Spring框架之后才出现的.
+ 整合步骤：
+ 1. 拷贝jar(Spring4的21个jar、 Struts2的必须jar).
+    tomcat6.x : servlet的规范2.5
+    tomcate7.x : servlet的规范3.0
+    tomcate8.x : servlet的规范3.1
+
+ 2. Spring4整合web应用.
+    -- Spring4容器创建的问题.
+    当web服务器启动完成，就创建Spring容器.
+    需要配置监听器listener(ContextLoaderListener),
+    该监听器ContextLoaderListener可以监听web服务器启动完成后，
+    就加载spring的配置文件创建spring容器.
+    它默认加载WEB-INF/applicationContext.xml文件.
+    web.xml文件中进行配置.
+
+    <!-- 配置Spring的核心监听器，创建Spring容器  
+ 		默认会找WEB-INF/applicationContext.xml
+     -->
+    <listener>
+ 	<listener-class>org.springframework.web.context.ContextLoaderListener</listener-class>
+    </listener>
+ 
+ 3. Struts2整合web应用.
+    -- 在web.xml文件中配置核心的过滤器.
+        默认加载src/struts.xml文件.
+ 
+ 4. 业务层的组件怎样注入到Action组件中.
+    Struts2提供与Spring进行整合的jar包.
+     struts2-spring-plugin.xx.jar
+
+     struts2创建action对象，创建完成后，会把对象交给Spring容器作依赖注入
+      采用的是自动装配 byName(set方法名)方式. 依赖注入完成后，再把action
+      对象交还给struts2.
+    
+ 
+Spring4整合Hibernate4:
+  1. 拷贝jar(Spring的21个jar, Hibernate4(required、jpa、optional/c3p0、mysql驱动))
+     jpa: java persistence api java持久化api.
+     ORM: 它只是一种思想.
+       Hibeante4、jdo
+     
+     jpa是orm的规范.
+
+     jdbc java database connection: 数据库连接的规范.
+     
+  2. Spring4整合web应用.
+     -- Spring4容器创建的问题.
+     当web服务器启动完成，就创建Spring容器.
+     需要配置监听器listener(ContextLoaderListener),
+     该监听器ContextLoaderListener可以监听web服务器启动完成后，
+     就加载spring的配置文件创建spring容器.
+     它默认加载WEB-INF/applicationContext.xml文件.
+     web.xml文件中进行配置.
+
+    <!-- 配置Spring的核心监听器，创建Spring容器  
+ 		默认会找WEB-INF/applicationContext.xml
+     -->
+    <listener>
+ 	<listener-class>org.springframework.web.context.ContextLoaderListener</listener-class>
+    </listener>
+
+    spring-web-4.2.0.RELEASE.jar
+
+ 3. Spring4整合Hibernate4(Spring提供整合方案)
+    -- /WEB-INF/applicationContext.xml(spring-orm-4.2.0.RELEASE.jar)
+    配置步骤：
+    a. 配置数据源dataSource(c3p0).
+
+       Configuration().configre();// hibernate.cfg.xml
+
+    b. 配置SessionFactory:
+
+       SessionFactory sf = configuration.buildSessionFactory(); // dataSource
+       -- 需要数据源 dataSource
+       -- 需要hibernate.cfg.xml (configLocation)
+   
+
+       创建项目的包名：公司的域名返写.项目名.xxx
+       公司的域名返写.项目名.controller|action
+       公司的域名返写.项目名.service
+       公司的域名返写.项目名.dao
+       公司的域名返写.项目名.entity|domain|vo|pojo|dto|model
+       公司的域名返写.项目名.util|common
+    
+ 
+       -- 写持久化类.
+       -- 在hibernate.cfg.xml文件中配置.
+
+       -- 定义HiberanteDao (基础dao接口)
+       -- 定义HiberanteDaoImpl (基础dao接口实现类)
+
+       Spring框架为了让我们更好的操作Hiberante为我们了提供了HibernateDaoSupport支撑类
+       这个类已经对Hiberante操作数据库作了封装。
+
+
+       -- 一个持久化类(一张表)对应一个dao接口与实现类.
+
+       -- 一个模块对应一个业务处理接口与实现类.
+
+
+  为什么要面向接口编程：
+  1. 架构师(定义业务接口).
+  2. 解耦(组件).
+
+
+
+/**
+ * ${type_name}
+ * @author LEE.SIU.WAH
+ * @email lixiaohua7@163.com
+ * @date ${date} ${time}
+ * @version 1.0
+ */

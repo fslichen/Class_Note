@@ -1,0 +1,254 @@
+复习：
+1. Spring的入门示例
+   a. 21个jar包
+   b. 写一个spring的配置文件，引用beans命名空间.
+   c. 写一个普通java类
+   d. 在配置文件中进行配置.
+   e. 获取Spring容器.
+      ClassPathXmlApplicationContext : classpath:
+      FileSystemXmlApplicationContext : file:
+
+      getBean("bean的id")从spring容器中获取指定的实例.
+
+2. 构造器注入
+   <constructor-arg/> : 为构造器指定实参.
+   -- <value type="java.lang.String"/> : 标量类型.
+   -- <array/> : [] 数组
+   -- <list/> : List集合
+   -- <set/>: Set集合
+   -- <map/>: Map集合
+       <map>
+	 <entry key="" value=""/>
+       </map>
+   -- <props/> : Properties集合
+   -- <bean/> : 嵌套Bean(一次性的bean)
+   -- <ref bean="bean的id"/>
+   -- <idref/>
+   -- <null/>
+
+   简化一：<constructor-arg value="" ref=""/> 
+   简化二：c:_0="标量类型" c:_1-ref=""
+   <bean id="" class="" c:_0="" />
+
+
+3. setter设值注入
+   <property name="setXxx把前面的set去掉首字母小写xxx"/> : 调用对象的setter方法。
+   -- <value type="java.lang.String"/> : 标量类型.
+   -- <array/> : [] 数组
+   -- <list/> : List集合
+   -- <set/>: Set集合
+   -- <map/>: Map集合
+       <map>
+	 <entry key="" value=""/>
+       </map>
+   -- <props/> : Properties集合
+   -- <bean/> : 嵌套Bean(一次性的bean)
+   -- <ref bean="bean的id"/>
+   -- <idref/>
+   -- <null/>
+
+   简化一：<property value="" ref=""/> 
+   简化二：p:name="标量类型" p:user-ref=""
+   <bean id="" class="" p:name="" />
+
+   IoC(控制反转) 当A类依赖B类，A类没有权利自己主动获取B类，只是被动的等待Spring容器给它注入. 
+   DI(依赖注入) 当A类依赖B类，A类不需要自己主动获取B类，而是通过Spring容器给A注入B类.
+
+4. 配置Bean的别名
+5. Spring的配置按Bean的作用来划分配置文件(多个配置文件)
+   <import resource="xxx.xml"/>
+
+Spring框架的执行的过程：
+1. 加载spring配置文件.
+2. 解析spring核心配置文件.
+3. 根据bean的class再通过反射创建它的对象.
+4. 把它存入Map集合中 key: bean的id，value: 创建出来的对象.
+   Map集合 --> Spring容器
+5. 再通过getBean("map的key|bean的id")方法获取map集合中的value.
+
+
+一、Bean的作用域: 指定spring容器中的实例能够存活多久.
+    <bean scope=""/>
+
+    -- singleton 单例(默认) 存活时间最长(容器在它就在，容器关闭它消毁).
+    -- prototype 原型(每次获取Bean都是新的实例). getBean();
+    -- request 对应request作用域(每个请求都会创建一个新的实例).
+    -- session 对应session作用域
+    业务层与dao层的实例都用单例.(如果出现并发访问) synchorxxx
+    负载均衡.
+    12306: 2亿.
+    
+
+二、Bean获取Spring容器: 该Bean必须实现ApplicationContextAware接口.
+        @Override
+	public void setApplicationContext(ApplicationContext ac)
+			throws BeansException {
+		System.out.println("AdminService: " + ac);
+	}
+
+三、自动装配(自动注入值)
+     <bean />元素中的属性：
+     -- autowire四个属性
+        default: 不会自动装配.
+        byName: 按照set方法名进行自动注入
+       	byType: 按照set方法的形参的类型
+       	constructor: 按照构造器中的参数类型
+     
+     -- autowire-candidate="true": 是不是候选bean. 同一种类型只能有一个候选bean.
+        autowire: byType|constructor.
+
+
+四、创建Bean实例三种方式
+    第一种方式：通过<bean/>元素.
+         <bean id="" class=""/>
+    第二种方式：通过静态工厂创建Bean实例.
+	配置静态工厂创建Bean: <bean id="" class="" factory-method="工厂静态方法"/>
+       	   class : 工厂类的包名 + 类名
+       	   factory-method : 指定静态方法
+
+    第三种方式：通过实例工厂创建Bean实例.
+        配置对象工厂创建Bean: <bean id="" factory-bean="工厂实例" factory-method="工厂静态方法"/>
+       	   factory-bean : 引用spring容器中存在的bean的id
+       	   factory-method : 指定静态方法
+    
+
+五、Bean继承与子Bean: 减少配置文件的配置，把重复的配置放在父bean.
+    -- 父Bean: <bean id="aa" abstract="true"/>
+    -- 子Bean: <bean id="bb" parent="aa"/>
+
+六、Bean的生命周期: 
+    -- 指得是在Bean实例创建好之后,获取bean实例之前(数据初始化操作).
+    -- 指得是在Bean实例消毁之前(关闭资源).
+
+    初始化方法：
+    -- 第一种方式：<bean init-method="init"/>
+    -- 第二种方式：bean类必须要实现InitializingBean接口.
+
+    消毁方法:
+    -- 第一种方式：<bean destroy-method="close"/>
+    -- 第二种方式：bean类必须要实现DisposableBean接口.
+
+七、调用getter方法(PropertyPathFactoryBean)
+    1. 用到PropertyPathFactoryBean调用getter方法的工厂类.
+       它里面的方法：
+	setTargetBeanName(): 目标对象的名称(字符串)
+        setTargetObject(): 目标对象.(对象)
+
+	setPropertyPath() : 指定get方法名称.
+  
+     <!-- 配置调用as对象的getDept方法 -->
+       <bean id="dept" class="org.springframework.beans.factory.config.PropertyPathFactoryBean">
+       		<!-- 设置目标对象的名称 -->
+       		<!-- <property name="targetBeanName" value="as"/> -->
+       		<!-- 设置目标对象 -->
+       		<property name="targetObject" ref="as"/>
+       		<!-- 设置方法名称 getDept()-->
+       		<property name="propertyPath" value="dept"/>
+       </bean>
+
+八、调用普通方法(MethodInvokingFactoryBean)
+    -- 静态方法:
+       a. setTargetClass() : 设置目标类
+       b. setTargetMethod() : 设置方法名称
+       b. setArguments() : 设置方法中的参数
+       <!-- 配置调用AdminService类的静态info()方法 -->
+       <bean id="age" class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
+       		<!-- 设置目标类 -->
+       		<property name="targetClass" value="cn.itcast.spring.service.AdminService"/>
+       		<!-- 设置方法名称 info()-->
+       		<property name="targetMethod" value="info"/>
+       		<!-- 设置方法中的参数 -->
+       		<property name="arguments">
+       			<array>
+       				<value>20</value>
+       				<value>李小华</value>
+       			</array>
+       		</property>
+       </bean>
+
+
+    -- 对象方法
+       a. setTargetObject() : 设置目标对象
+       b. setTargetMethod() : 设置方法名称
+       b. setArguments() : 设置方法中的参数 <array/>
+       <!-- 配置调用as对象中的info2()方法 -->
+       <bean id="city" class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
+       		<!-- 设置目标对象 -->
+       		<property name="targetObject" ref="as"/>
+       		<!-- 设置方法名称 info2()-->
+       		<property name="targetMethod" value="info2"/>
+       		<!-- 设置方法中的参数 -->
+       		<property name="arguments">
+       			<array>
+       				<value>广州市</value>
+       			</array>
+       		</property>
+       </bean>
+
+九、访问类的Field值(FieldRetrievingFactoryBean)
+    -- 静态Field:
+       a. setStaticField() : 设置哪个类中的静态属性
+
+       <!-- 访问类的静态属性 SESSION_USER -->
+       <bean id="abc" class="org.springframework.beans.factory.config.FieldRetrievingFactoryBean">
+       		<!-- 访问 
+       		   name="setStaticField()"
+       		-->
+       		<property name="staticField" value="cn.itcast.spring.service.RoleService.SESSION_USER"/>
+       </bean>
+
+     IoC与DI.
+
+十、基于Schema简化配置(util命名空间)
+    引入util:
+    xmlns:util="http://www.springframework.org/schema/util"
+    xsi:schemaLocation="http://www.springframework.org/schema/util
+        		http://www.springframework.org/schema/util/spring-util-4.2.xsd"  
+
+    
+    -- <util:list/> : 定义一个List集合Bean.
+	<util:list id="list2" list-class="java.util.ArrayList">
+		<value>第一个</value>
+		<value>第二个</value>
+	</util:list>
+
+    -- <util:set/> :定义一个Set集合Bean.
+	<util:set id="set2" set-class="java.util.HashSet">
+    		<value>aaa</value>
+		<value>bbb</value>
+	</util:set>
+    
+
+    -- <util:map/>: 定义一个Map集合Bean.
+         <util:map id="maps2" map-class="java.util.HashMap">
+		<entry key="001" value="1111"/>
+		<entry key="002" value="2222"/>
+	 </util:map>
+    -- <util:properties/>: 定义一个Properties集合Bean.
+        <util:properties id="props2">
+    		<prop key="name">admin</prop>
+    		<prop key="age">30</prop>
+	</util:properties>
+
+    -- <util:constant/> : 简化静态Field的访问.
+       <!-- 简化静态Field的访问 -->
+       <util:constant id="user2" static-field="cn.itcast.spring.service.AdminService.USER"/>
+       
+
+    -- <util:property-path/> : 简化getter方法的访问.
+        <!-- 简化getter方法的访问 path="bean的id名称.getName把get去掉首字母小写" -->
+    <util:property-path id="name2" path="adminService.name"/>
+
+
+十一、Sp EL(Spring表达式语言)
+      
+      Session:会话，代表持续的一段有效的时间.
+      HttpSession: 浏览器打开到浏览器关闭.
+      Session: 数据库连接的获取到数据库连接的关闭.
+    
+      EL: Expression Language  表达式语言 : ${}
+
+      Spring EL: #{} spring表达式语言.
+
+    配置文件中使用Sp EL表达式需放在#{}
+

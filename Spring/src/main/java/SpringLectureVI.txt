@@ -1,0 +1,138 @@
+一、Spring4整合Hibernate4事务的控制：
+1. 声明式事务控制: aop事务切面.
+2. annotation注解事务.
+
+a. read-only属性说明：
+   read-only=true : 只能做查询，没有开启事务.
+   read-only=false: CRUD,开启了事务. (一般查询设置read-only=true)如果
+      开启了事务对查询性能方面有影响.
+
+b. 业务层方法加了try{}catch()对事务有影响.
+   1. 如果业务层方法加了try{}catch(){}没有引发异常，那事务就没有.
+
+   2. 如果业务层方法加了try{}catch(){}就必须要引发异常，引发RuntimeException异常或它的子类异常.
+
+   3. 如果业务层方法加了try{}catch(){}就必须要引发异常，
+	引发的异常不是RuntimeException异常或它的子类异常,
+	要保证事务的话就需要在配置rollback-for这个属性.
+      
+      rollback-for: 出现什么异常回滚.默认就是RuntimeException异常.
+      no-rollback-for: 出现什么异常不回滚.
+
+   事务的控制：Spring的事务aop切面.它根据read-only属性决定是否开启事务,
+	根据业务方法是否出现了RuntimeException异常来决定是否回滚事务.
+        业务层方法里面的所有dao都共用同一个数据库连接Connection.
+
+
+   注意：事务切面，切业务层，因为业务层组合了多个Dao(这样就会对多张表进行操作).
+         所以Dao层中的方法只能执行一条CUD语句.
+
+
+
+二、SSH整合单元测试(测试用例 junit).
+    1. 拷贝jar(spring-test-4.2.0.RELEASE.jar、struts2-junit-plugin-2.3.24.jar、junit4).
+
+    2. 写测试类继承StrutsSpringJUnit4TestCase.
+
+三、aop的运用:
+    1. Spring整合Hiberante时，事务用aop切面.
+    2. 业务层方法异常日志记录.
+    3. 业务层方法性能测试.(业务方法执行花费的时间).
+
+
+    log4j-xxx.jar
+
+
+四、Hibernate的二级缓存.
+    -- 一级缓存(缓存的是对象): 默认是开启跟Session相关(存在内存中).
+    -- 二级缓存(缓存的是对象): 默认是关闭跟SessionFactory相关.
+       主要作用：提高查询的效率(速度).
+       使用二级缓存步骤：
+       1. 拷贝jar(hibernate-release-4.3.8.Final\lib\optional\ehcache\下面的jar)
+          ehcache-core-2.4.3.jar、hibernate-ehcache-4.3.8.Final.jar
+	  slf4j-api-1.7.2.jar、slf4j-jdk14-1.7.2.jar
+          
+	  ehcache: 专门的缓存框架.
+
+	  slf4j: Simple Logging Fade for Java java简单日志门面.
+
+       2. 在hibernate.cfg.xml文件配置开启二级缓存与二级缓存的提供商.
+          <!-- 配置开启二级缓存 -->
+	  <property name="hibernate.cache.use_second_level_cache">true</property>
+	  <!-- 配置二级缓存的实现商 -->
+	  <property name="hibernate.cache.region.factory_class">org.hibernate.cache.ehcache.EhCacheRegionFactory</property>
+          
+       3. 配置二级缓存中的对象内存中存放多少，超出内存中的最大存数量就写入磁盘.
+          ehcache.xml.
+
+       4. 配置哪些持久类中的对象放到二级缓存中.
+           hibernate.cfg.xml文件配置
+
+	   <!-- 配置哪些持久化类中的对象需要放到二级缓存中  region="myCache" -->
+	   <class-cache usage="read-write" class="cn.itcast.ssh.entity.Notice"/>
+           xxx.hbm.xml:
+	   <class>
+		<cache usage="read-write" region="myCache"/>
+	   </class>
+
+    -- 查询缓存(缓存的是SQL语句):
+       主要作用：提高查询的效率(速度).
+       查询缓存是在二级缓存的基础之上.
+       使用查询缓存步骤：
+       1. 在hibernate.cfg.xml文件配置开启查询缓存.
+          <!-- 配置开启查询缓存 -->
+	  <property name="hibernate.cache.use_query_cache">true</property>
+
+       2. 在查询时指定对该语句做查询缓存.
+          query.setCacheable(true).list();
+          {"sql", [1,2,3,4]}
+
+
+
+五、对applicationContext.xml做优化
+    
+    1. 对c3p0配置做优化：
+       ComboPooledDataSource : new ComboPooledDataSource()
+       默认到src下面加载c3p0.properties文件.
+       c3p0.driverClass=com.mysql.jdbc.Driver
+
+    2. 对hibernate配置做优化.
+       src/hibernate.properties
+    
+SSH整合用注解：
+ 1.  <!-- 开启annotation注解事务 -->
+   <tx:annotation-driven transaction-manager="transactionManager"/>
+
+   业层类需要加事务注解
+   -- 加在类上 : 是全局的对该类中的所有方法都有效.
+   -- 加在方法上: 是局部的只对当前方法有效.
+
+   @Transactional(readOnly=false, rollbackFor=RuntimeException.class)
+
+ 2. 开启组件扫描.
+    <!-- 开启组件扫描 -->
+    <context:component-scan base-package="cn.itcast.ssh"/>
+
+
+SSH整合总结：
+ IoC(控制反转)与DI(依赖注入)
+ 依赖注入: Action组件、Service组件、Dao层组件这三层组件之间的依赖关系，
+           以前通过硬编码的方式耦合一起，现在用Spring配置文件来管理它们
+	   之间的依赖关系，将它们的耦合提升到配置文件，
+	   从而提高了项目可维护性与可扩展性.
+
+
+aop的运用:
+    1. Spring整合Hiberante时，事务用aop切面.
+    2. 业务层方法异常日志记录.
+    3. 业务层方法性能测试.(业务方法执行花费的时间).
+
+
+Spring整合hibernate的事务有几种：
+1. aop事务切面.
+2. 事务注解.
+
+
+SSH整合:
+1. 用配置文件.
+2. 用注解.

@@ -1,0 +1,258 @@
+Spring4框架介绍：它是学JavaEE必须要掌握的框架。
+  MVC: Struts2、SpringMVC
+  持久层框架：Hibernate4.3.8、MyBatis3
+  中层框架：Spring4.2.0 (2015.7.31)
+  
+  项目架构:
+  SSH: Spring + Struts2 + Hibernate (50%)
+  SSM: Spring + SpringMVC + MyBatis3 (45%)
+
+  Spring + Struts2 + MyBatis3
+  Spring + Struts2 + MyBatis3 + Hibernate4
+
+  Activiti5(工作流)
+  WebService
+  Lucene
+
+  Spring框架它是用来整合其它的框架来做企业级开发.
+  Spring框架的历史：
+	2002年，Rod Johnson写了一本书，对以EJB为核心的Java EE平台进行批评和思考。
+	2003年，Rod Johnson开发了一个框架，这就是Spring。Spring的很多设计理念，其实就是起源EJB的启发。
+	当然，Spring更加简单易用。 
+
+  
+  我们学习的Spring版本：4.2.0. (2015.7.31).
+
+1. Spring下载与安装：
+   a. 官网：http://www.springsource.org
+      -- 下载网址(www.springsource.org)需要依赖Maven
+      下载仓库地址:
+http://repo.springsource.org/libs-release-local/org/springframework/spring/
+
+   b. 解压spring-framework-4.2.0.RELEASE-dist.zip
+      -- docs: api文档与学习参考文档
+      -- libs: 所有的jar包.
+      -- schema: xml的约束文件.
+
+2. Spring入门示例：
+   a. 拷贝jar包.(20个jar) + commons-logging-xx.xx.jar
+   b. 写一个xxx.xml文件.(src)
+      xmlns : xml name space
+
+   c. 开发组件(bean) 普通的java类.
+   d. 在配置文件中配置bean.
+   e. 加载spring配置文件，创建Spring容器(应用上下文)
+     
+      创建Spring容器可以通过两个实现类：
+      -- ClassPathXmlApplicationContext 类路径下找配置文件(classes)
+      -- FileSystemXmlApplicationContext 文件系统路径
+
+3. 基础配置元素:
+   <beans/> : 根元素.
+     属性：default-lazy-init : 是否默认延迟初始化容器中的bean. (ture 是) false|default (不是)
+     beans元素中指定的属性是全局的，对所有bean都起效.
+
+   <bean id="唯一的标识符" class="包名 + 类名"/>: 驱动类的构造器创建实例(对象).
+      lazy-init="false" 是否默认延迟初始化容器中的bean. (ture 是) false|default (不是)
+      相当重要的子元素：
+      -- <constructor-arg/> : 指定构造器中的参数(构造器注入)
+      -- <property/> : 指定bean的setter方法的值 (设值(setter)注入)
+
+
+   注意：局部优先.
+
+4. IoC(控制反转)与DI(依赖注入)
+   名词解释：IoC(控制反转) 与 DI(依赖注入)
+   Inversion of Control: IoC（控制反转)
+   Dependecy Injection: DI（依赖注入).
+
+   概念上的东西.
+
+5. 依赖注入(重点):
+   a. 构造器注入
+      <constructor-arg/>: 指定构造器中需要的参数(一个constructor-arg指定一个参数)
+      -- <value type="指定数据类型"/> : 8个基本数据类型、包装类、String
+           type: 包装类、String (需要加上包名)
+
+      -- <array value-type="数组中元素的类型"/> : 数组[]
+
+      -- <list/> : List集合
+            <!-- list List集合 value-type : 指定List集合元素的数据类型 -->
+	   <list value-type="java.util.List">
+
+      -- <set/> : Set集合
+           <!-- list List集合 value-type : 指定Set集合元素的数据类型 -->
+	   <set value-type="java.util.List">
+
+      -- <map/>: Map集合
+         <!-- map Map集合 key-type:指定Map集合中key的数据类型
+	    value-type : 指定Map集合中value的数据类型 -->
+	  <map key-type="java.lang.String" value-type="java.lang.String">
+		<!-- entry : key-value对象 -->
+		<entry key="001" value="广州市"/>
+		<entry key="002" value="深圳市"/>
+	  </map>
+	  key与value不是标量类型
+	  <map>
+		<entry>
+			<key> ... </key>
+			... 
+		</entry>
+	  </map>
+      -- <props/>: Properties属性集合
+	  <!-- props Properties集合 
+	         value-type : 指定集合中value的数据类型 -->
+	  <props value-type="java.lang.String">
+		<prop key="name">李天一</prop>
+		<prop key="age">19</prop>
+	  </props>
+
+     -- <bean/> : 嵌套Bean (不能用id来获取)
+		<!-- 构造中的第一个参数  -->
+		<constructor-arg>
+			<!-- 嵌套Bean (不能用id来获取) 一次性实例 -->
+			<bean class="cn.itcast.spring.service.UserService">
+				<constructor-arg>
+					<value>李天一</value>
+				</constructor-arg>
+			</bean>
+		</constructor-arg>
+     -- <ref/> :  用来引用容器中存在的Bean
+         <ref bean="指定容器中存在的Bean的id值"/>
+
+     -- <idref/> : 用来引用容器中存在的Bean的id值它是一个字符串
+	 <idref bean="指定容器中存在的Bean的id值"/>
+
+     -- <null/>: 用来传空值
+     
+     constructor-arg构造器元素属性做简化配置(Spring1.2):
+     -- value : 标量  (取代<value/>)
+     -- type: 数据类型
+     -- ref: ref引用容器中bean实例
+
+     constructor-arg构造器元素用c:短名做简化配置(Spring2.0):
+     -- c:_构造器参数的索引号 
+       标量类型<value/> value属性
+       c:_0=""
+       c:_1=""
+
+       bean类型： <ref/> ref属性
+       c:_2-ref="容器中bean的id属性值"
+       
+       在spring配置文件中引入
+       xmlns:c="http://www.springframework.org/schema/c"
+
+       <bean id="adminService" class="cn.itcast.spring.service.AdminService"
+    		c:_0-ref="userService" 
+    		c:_1="aaaa" 
+    		c:_2="30"/>
+
+
+   b. 设值set方法注入
+      <property/>：调用对象(bean)的setXxxx方法.(在调用构造器注入之后)
+      
+      -- <value type="指定数据类型"/> : 8个基本数据类型、包装类、String
+           type: 包装类、String (需要加上包名)
+
+      -- <array value-type="数组中元素的类型"/> : 数组[]
+
+      -- <list/> : List集合
+            <!-- list List集合 value-type : 指定List集合元素的数据类型 -->
+	   <list value-type="java.util.List">
+
+      -- <set/> : Set集合
+           <!-- list List集合 value-type : 指定Set集合元素的数据类型 -->
+	   <set value-type="java.util.List">
+
+      -- <map/>: Map集合
+         <!-- map Map集合 key-type:指定Map集合中key的数据类型
+	    value-type : 指定Map集合中value的数据类型 -->
+	  <map key-type="java.lang.String" value-type="java.lang.String">
+		<!-- entry : key-value对象 -->
+		<entry key="001" value="广州市"/>
+		<entry key="002" value="深圳市"/>
+	  </map>
+	  key与value不是标量类型
+	  <map>
+		<entry>
+			<key> ... </key>
+			... 
+		</entry>
+	  </map>
+      -- <props/>: Properties属性集合
+	  <!-- props Properties集合 
+	         value-type : 指定集合中value的数据类型 -->
+	  <props value-type="java.lang.String">
+		<prop key="name">李天一</prop>
+		<prop key="age">19</prop>
+	  </props>
+
+     -- <bean/> : 嵌套Bean (不能用id来获取)
+		<!-- 构造中的第一个参数  -->
+		<constructor-arg>
+			<!-- 嵌套Bean (不能用id来获取) 一次性实例 -->
+			<bean class="cn.itcast.spring.service.UserService">
+				<constructor-arg>
+					<value>李天一</value>
+				</constructor-arg>
+			</bean>
+		</constructor-arg>
+     -- <ref/> :  用来引用容器中存在的Bean
+         <ref bean="指定容器中存在的Bean的id值"/>
+
+     -- <idref/> : 用来引用容器中存在的Bean的id值它是一个字符串
+	 <idref bean="指定容器中存在的Bean的id值"/>
+
+     -- <null/>: 用来传空值
+     
+     property 该元素的属性做简化配置(Spring1.2):
+     -- value : 标量类型  (取代<value/>)
+     -- ref: ref引用容器中bean实例 <ref/>
+
+     property 调用setXxx方法用p:短名做简化配置(Spring2.0):
+     -- p:age   setXxx方法名把前面set去掉首字母小写.
+       标量类型<value/> value属性
+       p:age="" setAge()
+       c:name=""  setName()
+
+       bean类型： <ref/> ref属性
+       p:userService-ref="容器中bean的id属性值" setUserService(UserService userService);
+
+       
+       在spring配置文件中引入
+       xmlns:p="http://www.springframework.org/schema/p"
+
+       <bean id="adminService" class="cn.itcast.spring.service.AdminService"
+		p:name="李小刚"
+		p:date-ref="date">
+
+       注意：用spring调用set方法，该set方法只能有一个形参.
+
+6. 配置别名
+   第一种方式：用<bean name="别名1,别名2"/>
+   第二种方式：<alias name="bean的id值或name值" alias="cc"/>
+
+7. 分模块开发: 提供多个Spring配置文件
+    在加载的配置文件中导入其它配置文件.
+    <import resource="xxx.xml"/>
+
+
+
+     
+
+      
+
+
+   
+
+
+   
+  
+
+
+
+
+
+
+
+
