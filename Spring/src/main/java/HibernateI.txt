@@ -1,0 +1,439 @@
+课堂回顾
+
+一、struts2的值栈和Ognl表达式的使用
+
+1）值栈的数据
+	ObjectStack: ArrayList
+		保存Action对象和国际化对象
+	ContextMap: HashMap
+		保存映射关系
+
+		request  
+		session
+		application
+		parameters
+		attr
+
+2)在页面上获取值栈数据
+	使用struts2标签+ognl表达式
+
+	ognl表达式语法：
+		不带#： 获取值栈Object Stack
+			规则：从ObjectStack的第一个元素开始查询，找到返回，找不到继续找，直到最后一个为止！！
+		带#：  获取值栈的ContextMap
+			#request
+			#session
+			#application
+			#parameters
+			#attr.request / ....
+
+
+		{"value1","value2"...} : 创建List集合	
+		#{"key1":"value1","key2":"values"....}  创建Map集合
+		num1+num2
+		 *
+		 /
+		%{xxx}  强制使用ognl表达式
+
+3）struts2的标签
+	3.1 逻辑类标签：处理页面逻辑
+		<s:set/>  保存数据到ContextMap中（或者ContextMap的某个key）
+		<s:property/>  获取值栈数据
+		<s:if/>+<s:elseif/>+<s:else/> 条件判断
+		<s:iterator value="集合" id/var="每个对象"/>  循环
+	3.2 UI类标签：简化表单使用
+		<s:form>
+		<s:textfield/>
+		<s:password>
+		<s:radio>
+		<s:checkbox>
+		<s:checklist list="集合">
+		<s:select>
+	
+4)struts2的国际化
+	1.绑定资源包
+		<constant name="struts.customer.i18n.resource" value="资源包路径(resource.message)"></constant>
+
+	2.使用
+		Action:
+			getText("key")
+
+		jsp页面
+			<s:text name="key"/>
+			<s:textfield key="key">
+			.....
+
+
+
+		
+------------------------------------------------------------------------	
+一、表单数据验证： 后台验证
+
+	1 代码方式全局验证
+		Action类： 继承ActionSupport
+			覆盖validate方法
+				发生错误：addFieldError("name","xxxxx");	
+	2 代码方式局部验证
+		Action类： 继承ActionSupport
+			编写validate+需要验证的方法名称   例如： validateReg()  验证reg（）方法
+
+	3.使用配置方式全局验证
+		规则：在Action的同目录下建立    Action名称-validation.xml	
+				
+
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE validators PUBLIC
+  		"-//Apache Struts//XWork Validator 1.0.3//EN"
+  		"http://struts.apache.org/dtds/xwork-validator-1.0.3.dtd">
+  		
+<validators>
+	<!-- 验证一个属性
+	name: 需要验证的属性名
+	 -->
+	<field name="name">
+		<!-- 属性验证器 
+			type: 验证类型/规则
+			（/com/opensymphony/xwork2/validator/validators/default.xml）
+			常用的验证规则：
+				requiredstring： 必须的字符串
+		-->
+		<field-validator type="requiredstring">
+			<!-- 验证失败之后提示的信息 -->
+			<message>用户名不能为空！</message>
+		</field-validator>
+	</field>
+</validators>
+	
+	4.使用配置方式局部验证
+		规则： 在Action的同目录下建立   Action名称-方法访问路径-validation.xml
+				   验证UserAction的reg方法： UserAction-user_reg-validation.xml
+				
+		内容同上
+		
+二、拦截器(了解执行过程和原理)
+	1）概念
+	拦截器是struts2的核心概念，因为struts2的核心功能都是由拦截器完成的。
+
+	例如：
+		参数接收：com.opensymphony.xwork2.interceptor.ParametersInterceptor
+		文件上传：org.apache.struts2.interceptor.FileUploadInterceptor
+		国际化：com.opensymphony.xwork2.interceptor.I18nInterceptor
+		.......
+	
+		拦截器  vs  过滤器
+	效果：效果是一样的，都是可以拦截代码
+	本质上：
+		过滤器是servlet的三大组件之一，主要是拦截请求（静态内容和动态内容）和响应
+		拦截器是struts2的组件之一，主要是拦截的action（方法）
+
+	2）开发步骤
+		2.1 编写类，实现Intercepor接口
+	
+	//第一个拦截器
+public class MyInterceptor implements Interceptor{
+
+	public void destroy() {
+		
+	}
+
+	public void init() {
+		
+	}
+
+	//intercept方法类似于过滤器的doFilter方法
+	//ActionInvocation对象类似于FilterChain
+	public String intercept(ActionInvocation invocation) throws Exception {
+		System.out.println("1.执行拦截器的Action的前面代码");
+		
+		//放行
+		//执行下一个拦截器或者Action的方法
+		String result = invocation.invoke();
+		
+		System.out.println("3.执行拦截器的Action的后面代码");
+		
+		return result;
+	}
+
+}
+
+		2.2 在struts.xml文件中配置拦截器
+
+<package name="inter" extends="struts-default" namespace="/inter">
+	    <!-- 定义拦截器：在package下定义 -->
+	    <interceptors>
+	    	<interceptor name="myinter1" class="gz.itcast.b_interceptor.MyInterceptor"></interceptor>
+	    </interceptors>
+		<action name="book_*" class="gz.itcast.b_interceptor.BookAction" method="{1}">
+			<!-- 使用拦截器：在action下使用 -->
+			<interceptor-ref name="myinter1"></interceptor-ref>
+			<result>/succ.jsp</result>
+		</action>
+	</package>
+
+	3)定义拦截器栈
+
+ <!-- 定义拦截器：在package下定义 -->
+	    <interceptors>
+	    	<!-- 拦截器 -->
+	    	<interceptor name="myinter1" class="gz.itcast.b_interceptor.MyInterceptor"></interceptor>
+	    	<interceptor name="myinter2" class="gz.itcast.b_interceptor.MyInterceptor2"></interceptor>
+	    	<!-- 拦截器栈 -->
+	    	<interceptor-stack name="myStack">
+	    		<!-- 包含多个拦截器 -->
+	    		<interceptor-ref name="myinter1"></interceptor-ref>
+	    		<interceptor-ref name="myinter2"></interceptor-ref>
+	    	</interceptor-stack>
+	    </interceptors>
+
+---------------------------------------------------------------------------------------------
+Hibernate框架
+
+1）概念
+	Hibernate是基于ORM思想的持久层jdbc框架！！！！
+
+2）自定义简单hibernate框架
+	以前：保存学生  （dbutils+mysql）
+	现在：使用框架保存学生 
+
+3)ORM思想
+	对象-关系(数据库)-映射
+
+	类     表
+       属性    字段
+       对象    记录
+
+	效果：java开发人员只需要管理对象，间距管理关系（数据库）
+
+4）ORM框架		
+	DBUtils是一个简单的ORM框架（不纯粹）
+	Hibernate是相对复杂的ORM框架（相对纯粹）
+
+	ORM好处：
+		1）面向对象
+		2）可以不写sql语句
+		3）查询更加方便（返回对象）
+		
+	ORM弊端：
+		执行速度相对慢
+
+	基于ORM思想的框架：
+		DBUtils （封装最简单，速度最快）
+		Hibernate （封装最复杂，速度最慢）
+		TopLink
+		MyBatis （封装一般，速度一般）
+
+	互联网项目：简单的框架（不会用hibernate）
+	企业应用：OA系统，内部运维系统 	
+
+5）Hibernate的开发步骤
+	1）导入hibernate的jar包
+		导入requried目录下的所有包即可！！
+
+	antlr-2.7.7.jar     [辅助包]
+	dom4j-1.6.1.jar	 [dom4j核心包，hibernate底层使用xml解析工具]
+	hibernate-commons-annotations-4.0.5.Final.jar  [注解核心包，hibernate3.0支持注解]
+	hibernate-core-4.3.8.Final.jar   [hibernate的核心包]
+	hibernate-jpa-2.1-api-1.0.0.Final.jar  [对jpa框架]
+	jandex-1.1.0.Final.jar  [辅助包]
+	javassist-3.18.1-GA.jar [字节码辅助包]
+	jboss-logging-3.1.3.GA.jar  [jboss日志包]
+	jboss-logging-annotations-1.2.0.Beta1.jar [jboss日志包]
+	jboss-transaction-api_1.2_spec-1.0.0.Final.jar  [jboss事务支持包]
+	***mysql-connector-java-5.1.7-bin.jar   数据库驱动包
+
+
+	2）编写一个hibernate的启动配置文件
+
+	   2.1 配置连接参数
+	   2.2 hibernate环境参数
+	   2.3 ORM映射资源信息
+
+		注意：在src目录下建立  hibernate.cfg.xml
+
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE hibernate-configuration PUBLIC
+	"-//Hibernate/Hibernate Configuration DTD 3.0//EN"
+	"http://www.hibernate.org/dtd/hibernate-configuration-3.0.dtd">
+	<!-- 启动配置文件 -->
+<hibernate-configuration>
+	<!-- 类似于DataSource数据源 -->
+	<session-factory>
+		<!-- 1.连接数据库参数 -->
+		<property name="hibernate.connection.driver_class">com.mysql.jdbc.Driver</property>
+		<property name="hibernate.connection.url">jdbc:mysql://localhost:3306/day31?useUnicode=true&amp;characterEncoding=utf-8</property>
+		<property name="hibernate.connection.username">root</property>
+		<property name="hibernate.connection.password">1234</property>
+		
+		<!-- 2.hibernate环境参数 -->
+		<!-- hibernate的方言:指定hibernate生成的sql数据库版本 -->
+		<property name="hibernate.dialect">org.hibernate.dialect.MySQL5InnoDBDialect</property>
+			
+		<!-- 3.ORM映射信息 -->
+		<mapping resource="orm.xml"/>
+	
+	</session-factory>
+	
+</hibernate-configuration>
+						
+	3）建立表
+		-- 学生表
+CREATE TABLE t_student(
+	t_id INT PRIMARY KEY,
+	t_name VARCHAR(20),
+	t_gender VARCHAR(1),
+	t_age INT
+);
+
+	4）建立实体类
+		package gz.itcast.entity;
+
+public class Student {
+	private int id;
+	private String name;
+	private String gender;
+	private int age;
+	public int getId() {
+		return id;
+	}
+	public void setId(int id) {
+		this.id = id;
+	}
+	public String getName() {
+		return name;
+	}
+	public void setName(String name) {
+		this.name = name;
+	}
+	public String getGender() {
+		return gender;
+	}
+	public void setGender(String gender) {
+		this.gender = gender;
+	}
+	public int getAge() {
+		return age;
+	}
+	public void setAge(int age) {
+		this.age = age;
+	}
+	
+}
+
+	5）建立对象-关系的映射文件
+	
+	<?xml version="1.0"?>
+<!DOCTYPE hibernate-mapping PUBLIC 
+	"-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+	"http://www.hibernate.org/dtd/hibernate-mapping-3.0.dtd">
+
+<hibernate-mapping>
+	<!-- 映射一个类
+		name: 类名称
+		table: 表名
+	  -->
+	<class name="gz.itcast.entity.Student" table="t_student">
+		 <!-- 配置主键 -->
+		 <id name="id" column="t_id">
+		 	<!-- 主键策略 assigned: 程序需要赋值-->
+		 	<generator class="assigned"></generator>
+		 </id>
+		<!-- 
+			映射属性
+			name: 属性名称
+			column:	字段名称	
+		 -->
+		<property name="name" column="t_name"></property>
+		<property name="gender" column="t_gender"></property>
+		<property name="age" column="t_age"></property>
+	</class>
+
+</hibernate-mapping>
+
+
+	6）写代码，启动hibernate，保存学生
+
+	//演示hibernate的代码
+public class TestDao {
+
+	public static void main(String[] args) {
+		//保存学生
+		
+		
+		//1.读取hibernate.cfg.xml文件，创建Configuration对象  
+		  // 默认在src下找hibernate.cfg.xml
+		Configuration config = new Configuration().configure();
+		
+		//2.创建SessionFactory对象
+		SessionFactory sessionFactory = null;
+		
+		//hibernate3.x版本  过时
+		//sessionFactory = config.buildSessionFactory();
+		//hibernate4.x版本
+		//依赖服务注册器来创建SessionFactory
+		ServiceRegistry sr = (ServiceRegistry) new StandardServiceRegistryBuilder().applySettings(config.getProperties()).build();
+		
+		sessionFactory = config.buildSessionFactory(sr);
+		
+		//3.创建Session对象： 封装了CRUD方法
+		Session session = sessionFactory.openSession();
+		
+		Student student = new Student();
+		student.setId(3);
+		student.setName("王五");
+		student.setAge(30);
+		student.setGender("男");
+	
+		
+		//4.hibernate强制使用事务
+		//开启事务
+		session.beginTransaction();
+		
+		//5.保存对象
+		session.save(student);
+		
+		//6.提交事务
+		session.getTransaction().commit();
+		
+		//7.关闭资源
+		session.close();
+		sessionFactory.close();
+	}
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+		
+	
+
+
+	
+
+
+	
+
+		
+		
+			
+
+		

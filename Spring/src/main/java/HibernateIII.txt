@@ -1,0 +1,324 @@
+每日回顾
+
+Hibernate回顾
+
+一、概念
+是基于ORM（Object-Relation-Mapping）思想的对jdbc封装的持久层框架
+
+二、Hibernate开发步骤
+1）导入包
+	required目录下+数据库驱动包
+
+2）编写启动配置文件
+	在项目的src目录下  hibernate.cfg.xml
+
+	<hibernate-configuration>
+		<session-factory>
+			<!--数据库连接配置 -->
+			<property name="hibernate.connection.driver_class"></property>
+			<property name="hibernate.connection.url"></property>
+			<property name="hibernate.connection.user"></property>
+			<property name="hibernate.connection.password"></property>
+
+			<!-- hibernate配置信息 -->
+			<property name="hibernate.dialect"></property>
+			<property name="show_sql"></property>
+			<property name="format_sql"></property>
+			<property name="hbm2ddl.auto">create/update</property>
+			
+			<!-- 映射文件路径 -->
+			<mapping resource="xxxx"/>
+		</session-factory>
+	</hibernate-configuration>
+
+3）编写实体（对象）		
+4）编写表（关系）
+5）编写映射文件
+	在实体的同目录下 实体名称.hbm.xml
+		
+	<class name="类名" table="表">
+		<!--主键 -->
+		<id>
+			<generator class="assigned/native/identity/squenece/increment/uuid" />
+		
+		<!-- 普通属性 -->
+		<property name="xx" column="" type="java类型/hibernate类型" length="xxxx">
+	
+		<!-- 集合属性/对象属性 -->		
+	</class>
+	
+6）编写代码
+	Configuration config;
+	SessionFactory 
+	Session(*)
+		save()
+		saveOrUpdate()
+		update()
+		get()
+		list()
+		unqiueResult()
+		delete()
+		beginTransaction()
+	Transaction
+		commit()
+		rollback()
+
+集合映射
+	Set集合
+	对象：User
+		Set<String> addressSet;
+	关系：
+		t_user
+		t_address_set	
+			u_id
+			address_name
+	
+	映射：
+		<set name="addressSet" table="t_address_set">
+			<key column="u_id"/>
+			<element type="string" column="address_name"/>
+		</set>
+
+	List集合
+	对象：User
+		List<String> addressList;
+	关系：
+		t_user
+		t_address_list
+			u_id
+			address_name
+			idx   (从0开始，记录顺序)
+	映射
+		<list name="addressList" table="t_address_list">
+			<key column="u_id"/>
+			<list-index column="idx"/>
+			<element type="string" column="address_name"/>
+		</list>
+		
+	Map集合
+	对象：User
+		Map<String,String> addressMap;
+	关系：
+		t_user
+		t_address_map
+			u_id
+			address_no
+			address_name
+	映射
+		<map name="addressMap" table="t_address_map">
+			<key column="u_id"/>
+			<map-key type="string" column="address_no"/>
+			<element type="string" column="address_name"/>
+		</map>
+				
+------------------------------------------------------------------------------------------		
+对象（关系）映射   （重点）
+一、多对一单向
+二、一对多单向
+三、一对多（多对一）双向 
+四、多对多双向
+五、一对一双向
+
+--------------------------------------------- 
+
+一、多对一单向
+
+	订单   ->  客户
+
+	关系：
+	t_orders          t_customers
+		id            id
+		orderno       name
+		*c_id(fk)
+
+	对象：
+	(多方)                    （一方）
+	Orders                   Customers
+	    int id;                  int id;
+	    String orderno;          String name
+	    Customers customers;    
+	    	
+	映射：
+		<many-to-one name="customers"
+    		 column="c_id" 
+    		 class="gz.itcast.a_many2one_single.Customers"
+    		 cascade="none"/>
+
+	注意：
+	cascade：级联配置
+		sava-update: 级联保存或更新
+		delete: 级联删除
+		all: save-update+delete
+		none: 没有级联（默认）
+
+二、一对多单向
+	
+	客户 ->  订单
+
+	关系：
+	t_orders          t_customers
+		id            id
+		orderno       name
+		*c_id(fk)
+
+	对象：
+	Customers            Orders
+		id             id
+		name           orderno
+		*Set<Orders>  
+
+	映射：
+		<set name="orders" cascade="all">
+    		<!-- key: 外键字段名称 -->
+    		<key column="c_id"></key>
+    		<!--Set集合的元素类型  -->
+    		<one-to-many class="gz.itcast.b_one2many_single.Orders"/>
+    		</set>  
+
+三、一对多（多对一）双向 
+	关系：
+	t_orders          t_customers
+		id            id
+		orderno       name
+		*c_id(fk)		
+
+	对象：
+	Customers              Orders
+		id               id
+		name             orderno
+		*Set<Orders>     *Cusotmers cusomers;
+
+	映射
+	Orders.hbm.xml
+		<many-to-one name="customers"
+    		 column="c_id" 
+    		 class="gz.itcast.a_many2one_single.Customers"
+    		 cascade="none"/>
+
+	Customer.hbm.xml
+		<set name="orders" cascade="all">
+    		<!-- key: 外键字段名称 -->
+    		<key column="c_id"></key>
+    		<!--Set集合的元素类型  -->
+    		<one-to-many class="gz.itcast.b_one2many_single.Orders"/>
+    		</set>  	
+
+	问题：有了一对多关联之后，保存数据时，会多出两条update语句。这两条update是做什么的？能不能去掉？
+
+		结论：在一对多的关联关系配置中，在一方 把inverse="true"即可！
+
+四、多对多双向
+	学生   <->  老师
+
+
+	关系：
+	t_students             t_teachers
+	  id                     id 
+	  name                 	 name
+
+	   中间表： 
+		student_teacher
+		 *s_id(fk)
+		 *t_id(fk)
+
+		primary key(s_id,t_id) 联合主键
+
+	对象：
+	 Students                   Teachers
+	   int id                    int id
+	  String name               String name;
+          *Set<Teachers> teachers;    *Set<Students> students;
+
+	映射：
+	Student.hbm.xml
+
+		<set name="teachers" table="student_teacher" cascade="all">
+    		<!-- 当前对象所在中间表的外键 -->
+    		<key column="s_id"></key>
+    		<!-- Set集合元素类型 -->
+    		<!-- column: 集合类型所在中间表的外键 -->
+    		<many-to-many class="gz.itcast.d_many2many_double.Teachers" column="t_id"></many-to-many>
+    		</set>
+
+	Teachers.hbm.xml
+
+		<set name="students" table="student_teacher" inverse="true">
+    		<key column="t_id"></key>
+    		<many-to-many class="gz.itcast.d_many2many_double.Students" column="s_id"></many-to-many>
+    		</set>
+
+五、一对一双向
+	公民  <->  身份证
+
+	关系：
+	唯一外键方案：
+		t_persons           t_idcards
+		  id                 id
+		  name               cardno
+				     *p_id(fk+unqiue)
+
+	主键关联：
+		t_persons           t_idcards
+		  id                 id（pk+fk）
+		  name               cardno		
+
+	对象：
+	  Persons                      IdCards
+		int id                  int id;
+		String name;            String cardno;
+	        *IdCards idcards;       *Persons person;
+
+	映射：
+	Person.hbm.xml
+	<one-to-one name="idcards"
+    	   class="gz.itcast.e_one2one_double.IdCards" cascade="all"></one-to-one>	
+    
+	
+	IdCards.hbm.xml
+	唯一外键方案：（就是一种特殊的多对一）
+	<many-to-one name="persons"
+    	    class="gz.itcast.e_one2one_double.Persons"
+    	    column="p_id" unique="true"></many-to-one>
+
+	主键关联：
+	<one-to-one name="persons"
+    	    class="gz.itcast.e_one2one_double.Persons"
+    	   constrained="true" ></one-to-one>
+
+		
+
+	
+
+	
+
+	
+	
+
+
+
+
+
+
+	
+	
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+				

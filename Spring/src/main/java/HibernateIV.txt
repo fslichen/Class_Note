@@ -1,0 +1,283 @@
+每日回顾
+
+Hibernate关联（对象）关系映射
+一、一对多（多对一）关系
+	一对多单向
+	多对一单向
+	一对多（多对一）双向
+		
+	客户(一方)           订单（多方）
+	关系：
+	t_cusomters        t_orders
+	id                    id
+	name	              orderno
+			      *c_id(fk)
+
+	对象：
+	Customers           Orders
+	  id                 id
+	  name               orderno
+	  *Set<Orders> orders      *Customers customers
+
+	映射
+	  Customers.hbm.xml
+		<set name="orders" cascade="级联">
+			<key column="c_id"/>
+			<one-to-many class="xxxx.Orders"/>
+		</set>
+
+	 Orders.hbm.xml
+
+		<many-to-one class="xxx.Customers" column="c_id"/>
+		
+
+	cascade：级联
+		save-update: 级联保存或更新
+		delete ： 级联删除
+		all: save-update+delete 
+		none:没有级联
+
+二、多对多关系
+	 老师             学生
+
+	关系：
+	  t_students               t_teachers
+		id 			id
+		name 			name
+
+	   中间表：
+		*student_teacher
+			*s_id(fk)
+			*t_id(fk)
+
+		primary key(s_id,t_id)  
+
+	对象：
+	  Students            Teachers	
+		id               id
+		name             name
+	    * Set<Teachers> teachers    * Set<Students> students;
+
+	映射：
+	  Students.hbm.xml
+
+		<set name="teachers" table="student_teacher">
+			<key column="s_id"/>
+			<many-to-many class="xxx.Teachers" column="t_id"/>
+		</set>
+
+	  Teachers.hbm.xml
+	
+		<set name="students" table="student_teacher">
+			<key column="t_id"/>
+	  		<many-to-many class="xxx.Students" column="s_id"/>
+		</set>
+
+	inverse：是否反转关联关系的维护权
+		false:不反转
+		true: 反转，放弃
+	
+		一对多（多对一）： 默认关联关系维护权在一方，为了提高效率，建议在把一方的inverse设置为true
+		多对多： 默认关联关系维护权在双方。为了不产生重复记录，必须把任何一方的inverse设置为true
+
+三、一对一关系
+	公民         身份证
+	
+	关系：	
+	唯一外键
+	t_persons          t_idcards
+	  id                   id 
+	  name                 cardno
+			       *p_id(fk+unique)
+
+	主键关联：(把主键设置为外键)
+	t_persons          t_idcards
+	  id                   *id（pk+fk）
+	  name                 cardno
+
+	对象：
+	 Persons             IdCards
+	  id                  id
+	name                  name
+	* IdCards idcards     * Persons persons;
+
+	映射：
+	Persons.hbm.xml
+	<one-to-one name="idcards" class="xxx.IdCards"/>
+
+	IdCards.hbm.xml
+	唯一外键:
+	<many-to-one name="persons" class="xxx.Persons" column="p_id" unique="true"/>
+
+	主键关联：
+	<one-to-one name="persons" class="xx.Persons" constrainted="true"/>
+	
+------------------------------------------------------------------------------------------
+一、hibernate查询（重点）
+	1.1 HQL查询（重点）
+	1.2 QBC查询（Query By Criteria）（了解）
+	1.3 原生sql
+
+	1.1 HQL查询（重点）： Query对象
+	hql语句是hibernate自身的一门查询语句，语法类似于sql，这是一门面对对象的语句。
+
+		单表查询
+			全表查询
+			局部字段查询
+			条件查询
+			分页查询
+			聚合查询
+			分组查询
+
+		多表查询：
+			内连接
+			左外连接
+			右外连接
+		query.list()  查询多个对象
+		query.uniqueResult()查询一个对象
+
+	1.2 QBC查询（Query By Criteria）（了解） ： Criteria对象
+		
+	1.3 原生sql： SQLQuery对象
+
+二、hibernate一级缓存
+三、hibernate对象的状态
+四、立即加载vs懒加载
+五、hibernate二级缓存
+
+--------------------------------
+
+二、hibernate一级缓存
+	2.1 概念
+	不管是一级缓存还是二级缓存，通过减少和数据库的访问次数，从而达到提高hibernate的执行效率的目的！
+
+	hibernate的一级缓存称之为Session级别的缓存，因为缓存数据是保存在Session对象中的，一旦Session销毁，缓存数据就会消失！所以一级不能跨Session。（默认生效的）
+
+	hibernate的二级缓存称之为SessionFactory级别的缓存，因为缓存数据是保存在SessionFactory,只有SessionFactory销毁，二级缓存数据才会销毁，二级缓存是可以跨Session的。
+
+	2.2 一级缓存的操作
+		session.flush() :  同步一级缓存和数据库的数据  
+		session.evict(object) ： 从一级缓存中清除一个指定对象
+		session.clear():   清除一级缓存的所有对象
+
+三、hibernate对象的状态
+	一共有四种对象状态
+	
+	临时态
+		1）没有OID
+		2）没有放入一级缓存
+		3）在数据库中没有对应的记录
+
+	持久态（重要）
+		1）有OID
+		*2）已经放入一级缓存
+		3）在数据库中有对应的记录
+
+	游离态
+		1）有OID
+		*2）没有在一级缓存
+		3）在数据库中有对应的记录
+
+	删除态
+		1）有OID
+		2）没有在一级缓存
+		3）在数据库没有记录
+
+四、立即加载vs懒加载（延迟加载）
+	1.1 get vs load  的区别
+	
+		GET
+		1）执行get方法会立即执行sql查询数据
+		2）取出id值会执行查询
+		3) get方法如果查询不到对象，则返回null。可以判断对象是否存在
+		4）get方法是立即加载的（没有懒加载）
+
+
+		Load
+		1）执行load方法时不会执行sql查询数据，而是在访问对象的ID以外的属性时才去查询数据
+		2）如果只需要使用id值，则建议使用load方式（建议在删除对象时使用）
+		3）load方法如果查询不到对象，返回一个代理对象（不会返回null），通过代理对象可以更新数据库的数据
+		4）load方法是懒加载的
+		
+	1.2 懒加载
+		懒加载为了减少数据库的访问次数，在需要数据的时候才去数据库查询。
+
+		类的懒加载：
+		<class name="gz.itcast.b_session.Student" table="t_student" lazy="false">
+
+		 lazy="true"： 懒加载（默认）
+		 lazy="false": 立即加载
+
+		关联关系的懒加载：
+		<set name="emps" inverse="true" lazy="true">
+    		<key column="deptId"></key>
+    		<one-to-many class="gz.itcast.a_query.Employee"/>
+    		</set>
+
+五、hibernate二级缓存
+	默认情况下hibernate的二级缓存是关闭的。如果要使用二级缓存需要自行配置打开
+
+	
+	配置步骤
+	1)导入optional\ehcache下的所有jar包
+	2）在hibernate.cfg.xml文件中打开二级缓存且配置需要的插件
+	<!-- 开启二级缓存(默认为false) -->
+	<property name="hibernate.cache.use_second_level_cache">true</property>
+	<!-- 配置支持的二级缓存插件：ehcache插件  -->
+	<property name="hibernate.cache.region.factory_class">org.hibernate.cache.ehcache.EhCacheRegionFactory</property>
+	
+	3）在hibernate.cfg.xml文件中配置需要缓存的对象
+
+	<!-- 指定进行二级缓存的对象 -->
+	<class-cache usage="read-only" class="gz.itcast.b_session.Student"/>
+
+	4）编码
+
+
+
+
+				
+			
+		
+	
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	
+
+		
+		

@@ -1,0 +1,326 @@
+每日回顾
+
+1）struts表单数据验证
+	1.1 代码方式验证
+		1）全局验证（所有方法生效）
+			在Action中覆盖validate方法
+
+		2）局部验证（对某个方法生效）
+			在Action中编写validate+方法名称  （ validateReg() 验证reg()方法）
+	1.2 配置方式验证
+		1）全局验证
+			在Action同目录下建立 Action名称-validation.xml
+
+		<validators>
+			<field name="属性名称">
+				<field-validator type="requreidstring/regex/email/url/......">
+					<messsage key="国际化文件的key">信息内容</message>
+				</field-validator>
+			</field>
+		</validator>
+
+
+		2）局部验证
+			在Action同目录下建立 Action名称-方法访问路径-validation.xml
+
+		内容同上
+
+		jsp：显示错误信息
+		<s:fielderror fieldname="xxxxx"/>
+
+2)struts2拦截器
+	1）实现Interceptor接口	
+		init()
+		****incerceptor（ActionInvation invocation）
+		destroy()
+	2)配置拦截器
+		<package>
+			<intercetptors>
+				<interceptor name="别名" class="拦截器全名">
+				<interceptor-stack>
+					<interceptor-ref name="别名"/>
+				</interceptor-stack>
+			</interceptors>
+
+			<default-intercepotor-stack name="拦截器栈名称"/>  对当前包下的所有Action其作用
+
+			<action>
+				<intercetptor-ref name="拦截器/拦截器栈别名"/>  对Action起作用
+			</action>
+		</package>
+		
+
+	注意
+		如果自己定义了拦截器，则需要把struts2默认拦截栈defaultStack追加在第一位！
+
+		
+3）ORM思想
+	Object-Relation-Mapping 对象关系映射
+
+	对象          关系（数据库）
+-------------------------------
+	类           表
+	属性        字段
+	对象	    记录
+
+	关键点： 建立映射关系！！！
+
+4）hibernate概述
+	hibernate就是一个基于ORM思想的持久层对jdbc封装的框架！！！
+
+5）hibernate开发步骤
+	5.1 导入jar包
+		11个  ： 10个required目录下的jar  + 驱动程序包  ClassNotFound(com.mysql.jdbc.Driver)
+
+	5.2 配置hibernate的启动文件
+		在src目录下  hibernate.cfg.xml
+		
+		<hibernate-configuration>
+			<session-factory>
+				<!-- 连接数据库参数  -->
+				<property name="hibernate.connection.driver_class"></property>
+				<property name="hibernate.connection.url"></property>
+				<property name="hibernate.connection.username"></property>
+				<property name="hibernate.connection.password></property>
+
+				<!-- hibernate环境配置 -->
+				<!-- 方言 -->
+				<property name="hibernate.dialect">xxxxxxx.MySQL5InnoDBDialect</property>
+
+				<!--  映射关系配置  --->
+				<mapping resource="xxxx路径"/>
+			</session-factory>
+		</hibernate-configuration>
+
+	5.3 建立实体类
+		
+	5.4 建立表
+	
+	5.5 建立对象-关系映射配置
+		在实体的同目录下，每个实体对应1个
+		Student.hbm.xml  （实体名称.hbm.xml）
+
+		<hibernate-mapping>
+			<class name="类全名" table="表名称">
+				<!-- 主键 : 只有1个-->
+				<id name="属性名" column="字段名">
+					<generator class="主键策略"/>
+				</id>
+				<!-- 普通属性：有多个 -->
+				<property name="属性名称" column="字段名"/>
+				.......
+			</class>
+		</hibernate-mapping>
+
+	5.6 代码
+
+		//1.创建Configuration对象
+		//2.创建SessionFactory对象
+		//3.打开Session对象
+		//4.打开事务
+		//5.进行操作
+		//6.提交事务
+		//7.关闭资源
+	
+-------------------------------------------------------------------------------------------
+一、hibernate执行过程
+二、hibernate配置详解
+	hibernate.cfg.xml 启动文件详解
+	*.hbm.xml   映射文件详解
+三、Session核心方法（CRUD）
+四、主键映射策略 : <id/>
+五、普通属性映射： <property/>
+六、集合属性映射 :  <set/> <list/> <map/>
+七、关系映射：（重点）
+	一对多/多对一
+	一对一
+	多对多
+	
+---------------------------------------------------------------------	
+一、hibernate执行过程
+	看图
+
+二、hibernate配置详解
+	1)hibernate.cfg.xml 启动文件详解
+
+	<hibernate-configuration>
+		
+		配置多个<session-factory>
+		
+		<session-factory>
+			<!-- 连接数据库参数 -->
+			hibernate.connection.driver_class
+			hibernate.connection.url
+			hibernate.connection.username
+			hibernate.connection.password
+
+			<!-- hibernate环境配置-->
+			方言：
+			hibernate.dialect
+			
+			hibernate.show_sql  显示sql
+			hibernate.format_sql 格式化sql
+			hbm2ddl.auto  自动维护表结构
+
+			<!-- 映射配置信息-->
+			<mapping resource="gz/itcast/a_hello/Student.hbm.xml"/>
+			.....
+		</session-factory>
+
+	</hibernate-configuration>
+
+
+	2)*.hbm.xml   映射文件详解
+
+	<hibernate-mapping>
+		<!--
+			class: 代表映射一个类
+			name: 类的全名
+			table: 表名
+		 -->
+		<class name="gz.itcast.Student" table="t_student">
+			<!-- 主键映射 -->
+			<id>
+
+			<!-- 普通属性映射-->
+			<property>
+
+			<!-- 集合/关系映射 -->
+			<set>
+			<list>
+			<map>
+			<one-to-many>
+			<many-to-one>
+			<many-to-many>
+			<one-to-one>
+		</class>
+	</hibernate-mapping>
+
+四、主键映射策略 : <id/>
+	name: 对象的id属性名称
+	column: 表的主键的字段名称
+	
+	<generator class="xxxx"/>   hibernate的主键策略
+
+	1）ID由（开发者）程序维护
+		assigned   自行维护    setId(xxx)
+		
+	2）ID由底层数据库维护 （程序无需给id赋值）
+		identity   mysql: 自增长：auto_increment  sqlserver
+		sequence   oracle: 序列   
+		native （推荐）    自动根据数据库选择identity 还是sequence  
+ 
+	3）ID由hibernate框架维护（程序无需给id赋值）	
+		increment   整数类型  hibernate先查询当前表id最大值，然后+1
+		uuid       字符串类型
+
+		
+五、普通属性映射： <property/>
+	name: 对象的属性名称  (必须的)
+	column: 表的字段名称 （可选的，默认不写和属性名称一致）		
+	
+	****数据类型问题***********
+	type: 当前字段 的数据类型 (java类型或或者hibernate类型)  
+	length: 类型的长度
+		
+		java类型                  hibernate类型           对应的mysql的sql类型
+	整数    java.lang.Integer          integer                  int
+                java.lang.Short            short                    short
+		java.lang.Long              long                   bigint
+	小数	java.lang.Doube             double                  double 
+		java.lang.Float            float                    float
+	日期	java.util.Date              date                    date/datetime/timpstamp
+	文件    字符 
+		java.lang.String           string/text               varchar(20)/text/longtext
+		字节		
+		java.lang.Byte[]            binary                    blob/longblob
+	
+六、Session核心方法（CRUD）	
+	
+	增加：		
+		save()
+	更新：
+		update()
+		先查询get(xxx) -> 再调用setter方法
+
+	查询：
+		list()
+		uniqueResult()
+		get()
+	删除：
+		先查询get  -> 再delete(); 
+			
+
+七、集合映射
+	需求：
+	一个用户，有多个收货地址!（字符串）
+
+	7.1 使用set集合映射
+	实体：
+		//使用Set集合来存储收货地址
+		private Set<String> addressSet = new HashSet<String>();
+		
+	User.hbm.xml:
+		<!-- 映射Set集合 
+			name: Set集合的属性名称
+			table： 存储收货地址数据的表
+			key :配置用户的外键
+		-->
+		<set name="addressSet" table="t_address_set">
+			<!-- 外键 -->
+			<key column="u_id"></key>
+			<!-- Set元素的信息
+				type: 数据类型
+				column: 存放Set的数据的字段名称
+			 -->
+			<element type="string" column="address_name"></element>
+		</set>
+	
+	
+
+	
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+			
+		
