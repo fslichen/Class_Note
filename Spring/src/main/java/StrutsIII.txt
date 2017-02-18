@@ -1,0 +1,465 @@
+课堂回顾
+
+struts2加强
+
+一、struts2基本配置
+1.struts2三种Action写法
+	1）不实现任何接口不继承任何类
+	2）实现Action接口
+		默认execute方法
+		常用的视图字符串  SUCCESS  ERROR INPUT  LOGIN
+	3) 继承ActionSupport类 （推荐）
+		execute方法默认实现
+		常用的视图字符串  SUCCESS  ERROR INPUT  LOGIN
+		表单数据验证，国际化
+
+2.常量配置
+	struts-core.jar   org/apache/struts2/default.properties  
+
+	struts.i18n.encoding   请求参数编码
+	struts.action.extension  action访问后缀名
+	struts.enable.DynamicMethodInvocation  动态方法调用
+	.......
+
+	
+	struts.xml文件修改常量
+		<constant name="key" value="修改的值"/>
+			
+3.全局视图
+	<global-results>
+		<result>
+
+	当前包下可以共享这些视图
+
+
+4.注入action属性
+	
+	struts.xml
+	
+		<action>
+			<param name="serverPath">c:/targetFiles/</param>
+		</action>	
+
+	Action类：
+		
+		public void setServerPath(String path){
+			xxxxxxx
+		}
+
+二、struts2的核心功能
+1.请求参数接收
+	1） 普通数据类型接收
+	
+	表单：
+		<input type="text" name="name"/>
+
+	Action:
+		private String name;
+		public void setName(String name){
+			this.name=name;
+		}
+
+	2) JavaBean类型接收
+
+	表单：
+		用户表单
+		<input type="text" name="user.name"/>
+		
+		图书表单
+		<input type="text" name="book.name"/>
+
+	Action:
+		private User user;
+		private Book book;
+		public void setUser(User user){
+			this.user = user;
+		}
+		public User getUser(){
+			return user;
+		}
+
+	可以使用多个javabean去接收表单数据
+
+	3) 模型驱动接收
+	
+	表单：
+		用户表单
+		<input type="text" name="name"/>
+
+	Action：
+		class UserAction implement ModelDriven<User>{
+			private User user = new User();
+
+			public User getModel(){
+				return user;
+			}
+		}
+
+	不用修改表单，但是只能使用一个javabean去接收表单数据
+	
+2.数据共享问题
+	1）使用原生的servlet的api
+		
+		HttpServletRequest request = ServletActionContext.getRequest();
+		HttpSession session = request.getSession();
+		ServletContext context = ServletActionContext.getServletContext();
+
+	2) 通过struts2提供三个Map集合存放
+
+		ActionContext ac = ActionContext.getContext();
+		
+		Map requestMap = ac.get("request");  
+		Map sessionMap = ac.getSession();
+		Map applicationMap = ac.getApplication();
+
+		多个Action的方法之间不能共用这三个Map集合
+
+	3)通过struts2提供的三个接口来注入三个Map集合
+		
+		RequestAware  
+			setRequest(Map requestMap)
+		SessionAware
+			setSession(Map sessionMap)
+		ApplicationAware
+			setApplication(Map applicationMap)
+
+		Action的所有方法都可以共用这三个Map集合
+
+----------------------------------------------------------------------
+struts2的核心功能
+一、struts2的类型转换
+二、struts2的上传和下载
+三、值栈对象和Ognl表达式的基本使用
+
+------------------------------------------------------------------------
+一、struts2的类型转换
+	struts2内置类型转换的拦截器，这个拦截器可以把表单字符串（String）类型自动转换对应的其他类型，如
+		String->double,String->int,String->float,String->short,String-java.util.Date,但是内容必须按照正确的格式输入。（日期类型默认只支持短日期类型，即yyyy-MM-dd）	
+		
+	com.opensymphony.xwork2.interceptor.ParametersInterceptor
+
+	如果需要扩展struts2的类型转换类型，可以自定义类型转换器，自行转换
+
+	******开发自定义类型转换器步骤：************
+
+		1）编写一个java类，继承StrutsTypeConverter类
+
+	//自定义日期类型转换器
+//需求：让struts2支持yyyy/MM/dd
+public class MyDateConverter extends StrutsTypeConverter{
+	SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd");
+	
+	//页面-》Action 
+	/**
+	 * 参数一：context  上下文对象  ActionContext
+	 * 参数二：values   页面传过来的参数 （默认都是数组类型）
+	 * 参数三：toClass  需要转换到的类型
+	 * 返回值为转换后的值
+	 */
+	@Override
+	public Object convertFromString(Map context, String[] values, Class toClass) {
+		//1.得到页面的日期数据
+		String dateStr = values[0];
+		
+		//2.转换
+		try {
+			Date date = sdf.parse(dateStr);
+			return date;
+		} catch (ParseException e) {
+			e.printStackTrace();
+			throw new RuntimeException(e);
+		}
+	}
+
+	//Action -》 页面
+	@Override
+	public String convertToString(Map context, Object o) {
+		return null;
+	}
+
+}
+
+		2）绑定类型转换器
+		
+		局部绑定：只能绑定一个Action
+			规则：在需要绑定类型转换器的Action同目录下建立如下：
+				Action的名称-conversion.properties
+				内容：属性名称=gz.itcast.c_convert.MyDateConverter
+
+		全局绑定：可以绑定项目中的全部Action
+			规则：xwork-conversion.properties
+			内容：java.util.Date=gz.itcast.c_convert.MyDateConverter
+		
+
+	   *****接收参数的方式********
+		1）基本数据类型接收参数
+			绑定类型转换器：在Action的同目录下建立  Action的名称-conversion.properties
+			内容：属性名称=gz.itcast.c_convert.MyDateConverter
+
+		2）javabean类型接收参数
+			绑定类型转换器：在Action的同目录下建立Action的名称-conversion.properties
+			内容：book.publishtime=gz.itcast.c_convert.MyDateConverter
+
+		3）模型驱动接收参数
+			绑定类型转换器：在模型对象的同目录下建力 模型的对象名称-conversion.properties
+			内容：属性名称=gz.itcast.c_convert.MyDateConverter
+				
+
+二、struts2的上传和下载
+	1）文件上传
+
+	1.1 文件上传三个必须条件
+		form表单，file
+		post提交方式
+		form的enctype="multipart/form-data"
+
+	1.2 Struts2的Action接收上传的文件
+
+		<form action="xx" method="post" enctype="multipart/form-data">
+			<input type="file" name="attach"/>    -- inputName
+			<input type="text" name="name"/>   
+			
+		</form>
+
+		步骤:
+			class Action{
+				//接收文件内容
+				private File attach; //跟file的name属性值保持一致  inputName
+				public void setAttach(File attach{
+					this.attach = attach;
+				}
+				
+				//接收文件名称
+				private String attachFileName; //   inputName+FileName
+
+				//接收文件类型
+				private String attachContentType;// inputName+ContentType
+				
+				//接收普通表单数据(三种接收参数的方式都可以使用)
+				private String name;
+				//private Book book=new Book();
+			}
+			
+		
+		注意：
+		INPUT 名称的result是struts2内置的处理错误的视图，struts2框架在文件上传时超过大小，类型转换时转换错误，表单数据验证错误时都会指向到INPUT的视图。
+
+	
+	2）文件下载
+
+	以前：
+		//读取文件
+		File file = xxxxxxx
+		FileInputStream fis = new FileInputStream(file);
+
+		//给浏览器提示框(响应头)
+		response.setHeader("content-disposition","attachment;filename=xxxx");
+
+		//发送给浏览器
+		OutputStream out = response.getOutputStream();
+		//边读边写
+		byte[] buf = new byte[512];		
+		int len = 0;
+		while(  (len=fis.read(buf))!=-1 ){
+			out.write(buf,0,len);
+		}  
+
+		//关闭资源
+		fis.close();
+		out.close();
+		
+	变化的地方：
+		1）文件路径/文件类型
+		2）提示框里面的文件名
+		3）输出的缓存大小
+
+	Struts2框架：对文件下载的代码进行简化
+		
+		关键点：需要一个名称为steam的视图
+		
+		<!-- 配置一个下载的视图 -->
+			<result type="stream">
+				<!-- 配置视图参数：给视图注入参数 -->
+				<!-- 下载的文件类型：通用的二进制类型 -->
+				<param name="contentType">application/octet-stream</param>
+				<!-- 下载的提示框 -->
+				<!-- ${fileName} : 会获取当前Action的getFileName方法返回值 -->
+				<param name="contentDisposition">attachment;filename=${fileName}</param>
+				<!-- 需要下载的文件的输入流 -->
+				<param name="inputName">fileContent</param>
+				<!-- 下载的缓存大小 :默认1024-->
+				<param name="bufferSize">512</param>
+			</result>
+
+
+		Action:
+		//演示文件下载
+public class DownAction extends ActionSupport {
+	
+	//需要下载的文件
+	File file = null;
+	
+	//文件的名称
+	private String fileName;
+	//把文件名称通过getter方法设置到struts.xml配置文件中去
+	public String getFileName() {   -- 对应filename=${fileName}
+		return fileName;
+	}
+	
+	//把需要下载的文件以输入流的形式返回
+	public InputStream getFileContent() throws Exception{  -- 对应<param name="inputName">fileContent</param>
+		return new FileInputStream(file);   
+	}
+	
+	//下载
+	public String down(){
+		file = new File(ServletActionContext.getServletContext().getRealPath("/upload/mm.jpg"));
+		fileName = file.getName();
+		//struts2框架把文件下载的代码封装成一个视图类型： stream
+		return SUCCESS;
+	}
+
+}
+
+		struts-default.xml		
+		  	<result-type name="stream" class="org.apache.struts2.dispatcher.StreamResult"/>
+
+三、值栈对象和Ognl表达式的基本使用（重要）	
+	以前：servlet+jsp   servlet（通过域对象保存数据） -> jsp(使用jstl+el表达式获取数据)
+	现在和以后：Action+jsp   Action(通过值栈对象保存数据) -> jsp(使用struts标签+ognl表达式获取数据)
+
+	1）值栈概念
+	标准接口： ValueStack接口
+		实现类：OgnlValueStack对象
+
+		值栈是Struts2存取数据的核心！！！
+
+	2）值栈数据结构
+		值栈分为两个逻辑结构（数据结构）
+
+		Object Stack(对象栈)：ArrayList (CompoundRoot)
+			对象栈主要是用于保存Action的对象，还有国际化相关的对象
+
+		Context Map(映射栈)： HashMap (OgnlContext)
+			映射栈用于保存映射数据
+		
+			key              value
+		---------------------------------
+		     request            RequestMap
+		     session            SessionMap
+		     application     ApplicationMap    
+		     parameters       ParaemterMap
+		     attr             AttributeMap (封装了三个Map（request,session,application）)
+						
+		
+	3)操作值栈对象
+		OgnlValueStack对象:
+		操作Object Stack: Object Stack是一个ArrayList+栈结构（后进先出）
+			CompoundRoot getRoot()  ：得到Object Stack对象
+
+				push(Object o): 压入栈顶
+				Object pop(): 推出栈顶元素
+
+		操作Context Map： Context Map是HashMap结构
+			Map<String,Object> getContext()  ： 得到Context Map对象
+		
+			ActionContxt.get("request").put("name",Object): 操作Context Map中的reqest元素
+			ActionContxt.getSession().put("name",Object) 操作Context Map中的session元素
+			ActionContxt.getApplication().put("name",Object) 操作Context Map中的application元素
+			
+			
+	4)jsp页面获取值栈数据	
+		使用struts2的标签+ognl表达式
+
+		ognl获取数据规则：
+			获取Object Stack： 不带#号，直接获取
+			获取Context Map: 带#号
+			
+		  <%--取出Object Stack的对象 ：value：写ognl表达式--%>
+      		<s:property value="[0].name"/>
+      
+      		<hr/>
+     		 <%--取出Context Map的对象 --%>
+      		<s:property value="#session.s_book.price"/>		
+				
+						
+
+		
+			
+	
+		
+		
+
+
+
+
+
+		
+		
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+								
+			
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+		
+			
+	
+	
+	
