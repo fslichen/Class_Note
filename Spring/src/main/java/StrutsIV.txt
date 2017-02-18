@@ -1,0 +1,319 @@
+课堂回顾
+
+struts2文件上传下载和值栈
+
+一、struts2文件上传和下载
+1）文件上传
+	表单必要条件
+		<input type="file" name="attach"/>
+
+	Action接收文件数据：
+	
+		//文件数据
+		//接收文件
+		private File attach;
+		//文件名称
+		private String attachFileName;
+		//文件类型
+		private String attachContentType;		
+
+		//多个文件
+		private List<File> attach;
+		//文件名称
+		private List<String> attachFileName;
+		//文件类型
+		private List<String> attachContentType;	
+			
+		//普通表单数据
+		//普通基本类型接收
+		//JavaBean类型接收
+		//模型驱动接收
+
+2）文件下载
+	返回一个名称为stream的视图（result）
+
+	<action>
+		<result name="xxx" type="stream">
+			<!-- 文件类型
+			<param name="contentType">application/octet-stream</param>
+			<!-- 下载提示（设置响应头） -->
+			<param name="contentDisposition">attachment;filename=${fileName}</param>
+			<!-- 需要下载的文件输入流:getter方法名称 -->
+			<param name="inputName">fileContent</param>
+			<!-- 下载的缓存区大小-->
+			<param name="bufferSize">1024</param>
+		</result>
+	</action>	
+
+	Action:
+		
+		InputStream getFileContent(){
+			
+		}
+
+		String getFileName(){
+					
+		}
+		
+一、类型转换
+	struts2自身提供一个类型转换，只能转换基本数据类型和短日期类型（yyyy-MM-dd）
+
+	如果扩展类型转换类型，需要自定义类型转换器
+
+	 步骤：
+		1）继承StrutsTypeConverter
+			//页面->Action
+			convertFromString(){
+				
+			}
+
+			convertToString(){
+
+			}
+	
+
+		2)绑定类型转换器
+		局部绑定
+			1)普通类型: Date publishtime;
+				在Action的同目录下建立  Action名称-conversion.properties
+				pugblishtime=转换器全名
+			2）javabean： class Book{Date publishtime  }
+				在Action的同名录下建立  Action名称-conversion.properties
+				内容：javabean名称.publishtime=转换器全名
+			3)模型驱动：class Book{Date publishtime  }
+				在模型（Book）的同目录下建立  模型名称--conversion.properties
+				内容：publishtime=转换器全名
+
+			(某个Action有效！)
+		全局绑定
+			在src目录下建立xwork-conversion.properties
+			内容：数据类型=转换器全名
+	
+			（所有Action有效！）
+
+三、值栈
+	1）概念
+		ValueStack接口  OgnlValueStack类
+		是struts2数据存取的核心！！！
+	2）逻辑结构
+		Object Stack： ArrayList+栈
+			保存Action对象和国际化对象
+		Context Map： HashMap
+			保存映射关系数据
+		
+			request  RequestMap
+			session  SessionMap
+			application ApplicationMap
+			parameters ParameterMap
+			attr   AttributeMap
+
+	3）操作值栈
+		Object Stack： ArrayList+栈
+			push(Object o): 压入栈顶
+			Object pop(): 推出栈顶元素
+			
+		Context Map： HashMap
+			
+			ActionContext封装了值栈对象（OgnlValueStack）
+			封装过程：Action对象<-ActionContext对象<-OgnlValueStack对象
+
+			request:  ActionContext.get("request").put("name",Object);
+			session:  ActionContext.getSession().put("name",Object);
+			application: ActionContext.getApplication().put("name",Object);
+			
+------------------------------------------------------------------------------------------		
+
+一、值栈和Ognl表达式
+二、struts2标签库
+三、国际化
+四、表单数据校验
+五、拦截器
+
+--------------------------------------------------------------------
+
+一、值栈和Ognl表达式
+	现在和以后： Action(把数据保存到值栈)   ->  jsp页面 （从值栈获取数据）
+
+	1）值栈如何传递到jsp页面
+		struts2框架在Action中最后把值栈对象传递到jsp页面，通过request域对象的struts.valueStack名称的属性传递到jsp页面。
+
+		class Action{
+			1.创建OgnlValueStack对象			
+
+
+			public String list(){
+				2.得到OgnlValueStack对象，然后操作OgnlValueStack对象				
+			}
+
+			3.把OgnlValueStack对象放入request域对象
+			    request.setAttribute("struts.valueStack",OgnlValueStack对象);
+		}
+
+	2) 查看值栈对象所有内容
+		<s:debug/>	
+
+	3) 获取值栈数据的条件   
+		1）必须使用ognl表达式获取
+			学习ognl表达式语法
+		2）ognl表达式必须依赖struts2的标签
+
+		struts2获取数据的标签：
+			<s:property value="ognl表达式"/> 
+
+		ognl表达式语法：
+			1）获取Object Stack： 不带#号直接获取
+				
+			a)获取对象：  [下标]    下标从0开始 
+       			规则：从对象栈的指定下标的元素开始查找，直到最后一个元素为止！
+       				[0]  从第一个元素开始查找
+       				[1]  从第二个元素开始查找
+
+       			b)获取对象属性： [下标].属性    注意：下标可以不写，默认从第一个元素开始查找
+       			规则：从对象栈的指定下标的元素开始查找指定的属性，如果找到了就直接返回了，如果没有继续查找			，直到最后一个元素为止！	
+
+			 <s:property value="[1].name"/>
+
+			2）获取Context Map:带#号获取
+			 <s:property value="#name"/>
+			 <s:property value="#request.r_book.price"/><br/>
+			 <s:property value='#session.s_book.price'/>	
+			 <s:property value='#application.c_book.price'/>
+			 <s:property value="#parameters.email"/>
+			 <s:property value="#attr.request.r_book.price"/>
+
+二、struts2标签库
+	2.1 逻辑类标签： 类似于jstl  条件判断 循环  ...  用于处理jsp页面的逻辑
+		
+		<s:set/>  保存数据
+		<s:property/> 获取数据
+		<s:if/>+<s:elseif/>+<s:else>  条件判断
+		<s:iterator/>  循环
+		
+	2.2 UI标签：用于简化html标签(表单)使用
+		<s:form>
+		<s:textfield>
+		<s:password>
+		<s:submit>
+		<s:reset>
+		<s:checkbox>
+		*<s:checkboxlist>
+		*<s:radio>
+		*<s:select>
+		
+三、国际化
+	文字国际化
+	以前：
+		ResourceBundle绑定资源包
+		 资源包名称规则： 包名_语言_国家.properties
+		
+			<fmt:setBundle/>
+			<fmt:message/>
+
+	struts2现在：
+		步骤：
+		1）统一绑定资源包
+			<!-- 修改国际化资源包的路径 -->
+			<constant name="struts.custom.i18n.resources" value="resource.message"></constant>
+
+		2）使用
+		Action:
+			getText()方法
+			注意：继承ActionSupport
+
+		jsp页面：
+			<s:text name="user"/>
+			<s:textfield key="user"/>
+
+四、表单数据校验
+	数据验证
+		1）javascript页面前端进行验证（不安全）
+		2）后台进行验证（代码验证）
+
+	struts2的表单数据验证：
+		1）使用代码进行验证
+			1.1 全局验证（所有方法的验证）
+			1.2 局部验证（一个方法的验证）
+
+		2）使用配置文件进行验证
+			2.1 全局验证（所有方法的验证）
+			2.2 局部验证（一个方法的验证）
+	
+	
+	作业：
+	改造购物商城	struts2是基于MVC的web层框架
+
+		
+
+
+
+	
+
+		
+
+
+
+		
+		
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+				
+		
+
+
+
+
+
+	
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	
+	
+		
+		
+		
+
+		
+
