@@ -1,0 +1,272 @@
+框架阶段：
+	S（Struts2）+S（Spring）+H（Hibernate）
+
+项目架构：
+	MVC+三层架构
+	
+	DAO层：数据访问层（持久层）  Hibernate
+	Service层：业务逻辑层  Spring
+	Web层：表现层（MVC开发模式）      Sturts2
+
+
+	结论：Struts2是一个基于MVC开发模式的表现层框架
+	
+大纲：
+	1）模拟一个struts2框架  -- 了解原理
+	2）struts2程序开发步骤  （必须掌握）
+	3）struts2执行过程
+	4）struts2配置详解
+	
+---------------------------------------------------------------------------
+1）模拟一个struts2框架  -- 了解原理
+	需求：
+		用户登录
+		用户注册
+	以前：
+		Dao
+			public void findByName()
+			public void addUser()
+		Service
+			public void login(){
+
+			}
+
+			public void reg(){
+			
+			}
+		Web:
+			第一种：
+				一个功能使用一个servlet程序	
+			第二种:
+				一个模块使用一个servlet程序
+			第三种（目标）：			
+				一个项目使用一个servlet程序
+
+		
+2）struts2程序开发步骤  （必须掌握）			
+	struts2框架是一个基于MVC开发模式的表现层框架。
+
+	struts2来源于webwork框架
+		struts1框架也是基于MVC的表现层，使用不够简单，需要很多配置，所以struts2并不是参考struts1进行开发，而是参考webwork框架。
+
+	     思想：约定大于配置
+
+
+	*****开发步骤：********************
+	1）导入jar包
+	8个必须包
+		commons-fileupload-1.2.2.jar    [文件上传核心包]
+		commons-io-2.0.1.jar              [文件上传辅助包]
+		commons-lang3-3.1.jar               [对字符串操作核心包]
+		freemarker-2.3.19.jar            [strut2页面标签底层使用的是freemarker]
+		javassist-3.11.0.GA.jar         [对字节码操作的核心包]
+		ognl-3.0.5.jar                    [strut2页面标签支持ognl表达式]
+		struts2-core-2.3.4.1.jar        [struts2自身的核心包]
+		xwork-core-2.3.4.1.jar          [struts2底层使用的webwork的核心包]
+		
+	2）配置struts2的核心过滤器
+		注意：在web.xml文件中配置
+		该核心过滤器用于处理项目的所有请求
+	struts2核心过滤器：
+	org.apache.struts2.dispatcher.ng.filter.StrutsPrepareAndExecuteFilter	
+	
+ <!-- 配置struts2的核心过滤器 -->
+  <filter>
+  	<filter-name>struts2</filter-name>
+  	<filter-class>org.apache.struts2.dispatcher.ng.filter.StrutsPrepareAndExecuteFilter</filter-class>
+  </filter>
+  <filter-mapping>
+  	<filter-name>struts2</filter-name>
+  	<!-- 拦截的路径 -->
+  	<url-pattern>/*</url-pattern>
+  </filter-mapping>
+
+	3）编写操作类
+		package gz.itcast.web;
+//用户操作类
+public class UserAction {
+
+	//   /userLogin.action
+	//登录方法
+	public String login(){
+		System.out.println("执行了登录业务");
+		return "success";
+	}
+	
+	// /userReg.action
+	public String reg(){
+		System.out.println("执行了注册业务");
+		return "success";
+	}
+}
+
+	4）编写struts2的业务配置文件
+		注意：名称一定为struts.xml,位置一定放在src目录下
+		
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE struts PUBLIC
+	"-//Apache Software Foundation//DTD Struts Configuration 2.3//EN"
+	"http://struts.apache.org/dtds/struts-2.3.dtd">
+	
+<struts>
+	<package name="user" extends="struts-default" namespace="/">
+		<action name="userLogin" class="gz.itcast.web.UserAction" method="login">
+			<result name="success">/index.jsp</result>
+		</action>
+		
+		<action name="userReg" class="gz.itcast.web.UserAction" method="reg">
+			<result name="success">/index.jsp</result>
+		</action>
+	</package>
+</struts>
+	
+3）struts2执行过程
+	项目启动时：
+		1）加载web.xml文件，创建org.apache.struts2.dispatcher.ng.filter.StrutsPrepareAndExecuteFilter核心过滤器对象
+		2）调用核心过滤器中的init方法
+			2.1 读取default.properties     【struts2的默认常量文件】
+			（struts2-core.jar: /org/apache/struts2/default.properties）
+			2.2 读取struts-default.xml    【struts2的默认核心配置文件】
+			（struts2-core.jar:/struts-default.xml）
+			2.3 读取struts-plugin.xml    【struts2的插入配置文件】
+			（一般不会用到）
+			2.4 读取struts.xml            【struts2的业务配置文件，开发时经常修改】
+			(项目的src：struts.xml)
+			
+	发出请求：
+		1）根据请求名称，在struts.xml文件中对应的action标签（根据action的name属性值）
+		2）查找结果
+		   失败：
+			如果没有匹配成功，则页面抛出There is no Action mapped 异常	
+		   成功：
+			2.1 根据action标签的class的字符串去创建一个Action(操作)类实例
+			2.2 根据action标签的method去调用Action类里面对应的方法
+			2.3 执行完操作方法后，返回一个视图标记的字符串
+		3）根据视图标记字符串在当前action标签中查找对应的result标签（根据result的name属性值）
+		4）找到对应的result，则跳转到对应的页面	
+			
+4）struts2配置详解
+			
+	1）struts-default.xml ： struts2的核心默认配置文件
+		第一部分：创建struts2框架自身需要的对象
+			 <bean class="com.opensymphony.xwork2.ObjectFactory" name="xwork" />
+			 ......
+		第二部分：一个默认包
+			<package name="struts-default" abstract="true">
+				name: 包名称
+				abstract: 抽象包
+				
+				1）定义struts2支持的视图类型
+			  <result-types>
+           		 <result-type name="chain" class="com.opensymphony.xwork2.ActionChainResult"/>
+			 。。。。。
+
+				常用的视图类型：
+				dispatcher： 转发到页面  （默认类型） (可以通过request带数据)
+				redirect：重定向到页面  
+				chain:转发到其他Action   (可以通过request带数据)
+				redirectAction：重定向到其他Action
+				stream： 以流的形式进行输出  （用于文件下载）
+				plainText：以纯文本方法进行输出  （ajax技术）
+				
+
+				2）定义了struts2的支持的拦截器
+
+				<interceptors>
+            <interceptor name="alias" class="com.opensymphony.xwork2.interceptor.AliasInterceptor"/>		
+		。。。。。。
+
+				struts2除了基本功能以外，还提供了如下实用功能：
+				传递页面参数数据
+				文件上传
+				国际化
+				数据共享
+				类型转换
+				表单数据校验
+				....
+
+				拦截器只能拦截action
+				过滤器可以拦截任何请求
+				
+				3）定义了默认的拦截器栈
+			<interceptor-stack name="basicStack">		
+				拦截栈中包含多个拦截器
+				
+				4）定义当前包使用的默认拦截器
+			 <default-interceptor-ref name="defaultStack"/>
+				当前包下的所有action都可以使用该拦截器栈下的所有拦截器
+				
+				5）定义当前包的默认操作类
+				<default-class-ref class="com.opensymphony.xwork2.ActionSupport" />
+				当前包下的action如果不写class就使用默认类
+
+			</paackge>
+
+
+	2）struts.xml:  业务配置文件
+		
+		让myeclise工具可以提示xml内容：
+			步骤：
+			1）在struts目录下找到struts-2.3.dtd
+			2) myecplise->windows->搜索xml catalog -> 添加一个dtd文件
+
+		     KEY使用这个：-//Apache Software Foundation//DTD Struts Configuration 2.3//EN
+
+		1)包。区分不用的action
+		<package>
+			name:包名。通常不同的包使用不同的名称（如果同名则报错）
+			extends：当前包的父包的包名。通常为struts-default默认包
+				 继承了struts-default默认包就可以使用该包下定义的元素
+			namespace： 名称空间（命名空间）
+				为了区分不同包的访问路径
+					
+				注意：
+				有了namespace后，action的访问路径必须带上namespace
+				  本质上完整路径：namespace路径+action的name属性
+
+			<action> : 操作配置
+				name(必须): 请求名称，通常同一个包下不要出现同名的action
+				class（可选）: 操作类的全名（包+类名）
+					默认类：com.opensymphony.xwork2.ActionSupport
+				method（可选）： 执行的操作方法
+					默认方法：execute
+
+				<result> : 视图
+					name: 视图名称。跟操作方法返回的字符串匹配
+						默认值：success。（其他名称都需要写）
+					type：视图类型		
+						默认值：dispatcher
+					内容：跳转路径，如果是页面必须带斜杠，如果是action不需要
+						没有默认值
+	
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+		
