@@ -1,0 +1,388 @@
+课程回顾
+
+struts2基础
+
+一、概述
+	struts2是一个基于MVC开发模式的表现层框架。
+
+二、struts2开发步骤
+	1）导入8个必须的jar
+	2）配置核心过滤器
+		web.xml
+
+		StrutsPreparedAndExecuteFilter
+
+	3)编写操作类
+		XXXXAction
+			public String method(){
+				xxxxx
+				return "视图标记字符串"
+			}
+	4）配置操作类
+		src目录下建立struts.xml文件
+
+		<package name="xxx" extends="struts-default" namespace="/xxx">
+			<action name="xxx" class="xxxx" method="xxx">
+				<result name="xxx" type="xxx">页面路径/action名称</result>
+			</action>
+		</package>
+	5）启动访问
+		http://localhost:8080/项目/名称空间/action的name
+
+三、struts2执行过程
+	项目启动
+		1）核心过滤器创建实例
+		2）调用init方法
+			读取default.properties文件  -- 默认常量文件
+			读取struts-defualt.xml   -- 默认核心配置文件
+			读取struts-plugin.xml    
+			读取struts.xml    -- 业务配置文件（经常使用）
+	每次访问：		
+		1）找对应action配置
+		2）创建对应的操作类实例
+		3）调用操作类的方法
+		4）返回视图标记字符串，根据视图类型进行跳转
+
+-----------------------------------------------------------------------------
+
+一、struts2的基本配置和通用功能
+1）struts2的action类的三种写法
+2）struts2的常量配置
+3）全局视图和默认配置
+4）注入action的属性
+
+二、struts2的核心功能
+1) 请求参数的接收方式
+2）数据共享的方式
+3）类型转换
+4）文件上传和下载
+
+---------------------------------------------------
+
+一、struts2的基本配置和通用功能
+1）struts2的action类的三种写法
+	1.1 action类不实现任何接口和不继承任何类
+		
+	/**
+ * 1.action类不实现任何接口和不继承任何类
+ * @author APPle
+ *
+ */
+public class UserAction1 {
+
+	public String login(){
+		System.out.println("执行了UserAction1的login");
+		return "success";
+	}
+}
+
+
+	1.2 action类实现Action接口
+		
+/**
+ * 2.action类实现Action接口
+ * 好处：	
+ * 	1）为Action类提供了一个标准（有了默认的execute方法）
+ *  2) 为Action类提供了常用的视图标记字符串
+ * @author APPle
+ *
+ */
+public class UserAction2 implements Action{
+
+	public String execute() throws Exception {
+		System.out.println("UserAction2的execute()");
+		return Action.SUCCESS;
+	}
+	
+}
+
+	1.3 action类继承ActionSupport类（推荐）
+		
+/**
+ * 3.action类继承ActionSupport类（推荐）
+ * 好处：	
+ * 	 1)为action类提供了Action接口的默认实现，默认跳转到SUCESS
+ *   2）为action类提供了常用的视图标记字符串
+ *   3）为action类额外提供了数据表单验证以及国际化等功能
+ * @author APPle
+ */
+public class UserAction3 extends ActionSupport{
+
+	public String login(){
+		System.out.println("UserAction3的login");
+		return SUCCESS;
+	}
+}
+
+
+2）struts2的常量配置
+	struts2-core.jar : /org/apache/struts2/default.properties  默认常量配置
+
+	常见的常量配置：
+		struts.i18n.encoding： 请求参数的编码
+					request.setCharacterEncoding("utf-8");
+		
+		struts.multipart.parser: 文件上传使用的组件  默认为jakarta  (commons-fileUpload)
+		struts.multipart.saveDir: 文件上传时使用的临时目录 默认为windows的临时目录			
+		struts.multipart.maxSize： 文件上传时最大的文件大小 默认为2MB
+		struts.action.extension： action访问的后缀名。  默认为  action,,
+		struts.enable.DynamicMethodInvocation: 动态方法调用。默认为true，一般只在开发调试阶段使						用！建议项目上线时关闭此功能
+		struts.ui.theme： struts2的UI的主题。默认： xhtml
+		
+	修改默认常量配置：
+		在struts.xml文件中添加配置
+
+		<!-- 修改常量配置 -->
+		<constant name="struts.i18n.encoding" value="utf-8"></constant>
+
+3）全局视图和默认配置
+	
+	3.1 全局视图
+
+	<!-- 全局视图 :
+			作用：在当前包下的所有action都可以共享这个视图
+			-->
+		<global-results>
+			<result>/index.jsp</result>
+		</global-results>
+
+		注意:
+		默认情况下，当前包下的所有action都可以使用这些视图，但是如果action自己配置了同名的视图则覆盖了全局视图！！
+		
+
+	3.2 action的默认配置
+
+	name: 必须的
+			class: 默认值。ActionSupport
+			method: 默认值。execute
+				result的默认配置
+					name:默认 success
+					type: 默认 dispatcher
+					内容：必须
+
+	注意：通常使用action的默认配置可以进行WEB-INF目录下的页面跳转
+	
+4）注入action的属性
+	作用: action的参数可以通过struts.xml文件设置到action中
+
+	步骤：
+	1）在对应action的配置中进行配置
+
+	<action name="book_*" class="gz.itcast.c_property.BookAction" method="{1}">
+			<!-- 1.配置param -->
+			<param name="serverPath">c:/targetFiles/</param>
+			<result>/index.jsp</result>
+	</action>
+
+	2）在对应的action类中提供一个同名的setter方法
+
+	private String serverPath;
+	//提供一个跟param的name同名的setter方法
+	public void setServerPath(String serverPath) {
+		this.serverPath = serverPath;
+	}
+
+
+二、struts2的核心功能
+1) 请求参数的接收方式
+
+	关键拦截器：com.opensymphony.xwork2.interceptor.PrepareInterceptor  （参数拦截器）
+	作用：把表单用户填写的数据接收过来，然后通过Action的setter方法赋值给Action类
+
+	1.1 基本数据类型
+	表单：
+		用户名：<input type="text" name="name"/> <br/>
+
+	Action:
+ public class UserAction1 extends ActionSupport {
+	private String name;
+	//必须提供setter方法来接收表单的参数
+	private String password;
+	//提供name属性同名的setter方法
+	public void setName(String name) {
+		this.name = name;
+	}
+	public void setPassword(String password) {
+		this.password = password;
+	}
+	优势：
+		1）参数数量少的时候比较简单使用
+		
+	缺点：
+		如果参数数量多的时候，必须每个参数在Action类中提供setter方法逐个接收
+		
+	1.2 JavaBan类型
+		
+	表单：
+		 用户名：<input type="text" name="user.name"/> <br/>
+
+	Action：
+		public class UserAction2 extends ActionSupport {
+	
+	private User user;  //和表单的user保存一致
+	//约定：javabean的属性名称和表单的name属性值保持一致
+	//必须提供getter和setter方法来接收表单的参数
+	public User getUser() {
+		return user;
+	}
+	public void setUser(User user) {
+		this.user = user;
+	}	
+
+	优势：
+		1）参数多的时候更方便地接收
+		2）可以接收多个不同的表单（封装多个不同的对象）
+	缺点：	
+		需要修改表单的name属性值
+
+	1.3 模型驱动的方法  ModelDriven
+	
+	表单：
+		 用户名：<input type="text" name="name"/> <br/>
+
+	Action：
+		1）Action类实现ModelDriven接口
+		2）实现getModel()方法
+		3）在Action类声明一个对象的成员变量在getModel方法中去接收表单的数据
+		4）注意：一定要给对象初始化(private User user=new User();)
+
+		public class UserAction3 extends ActionSupport implements ModelDriven<User>{
+	private User user=new User();//注意：一定要创建一个对象
+	//注册方法
+	public String reg(){
+		System.out.println("UserAction3-注册方法");
+		System.out.println(user);
+		return SUCCESS;
+	}
+
+	//struts2通过此getter方法返回封装好的表单数据的对象
+	public User getModel() {
+		return user;
+	}
+
+	
+}
+
+	优势：
+		1）参数多的时候更方便地接收
+		2）不用修改表单
+	缺点：
+		1）只能接收一个表单（只能封装一个对象）
+
+
+2）数据共享的方式
+	
+	2.1 使用原生的servlet的api进行域对象共享
+
+	
+		//把数据共享到jsp显示
+		//request
+		//得到HttpServletRequest对象
+		HttpServletRequest request = ServletActionContext.getRequest();
+		request.setAttribute("r_books", books);
+		
+		//session
+		HttpSession session = request.getSession();
+		session.setAttribute("s_books", books);
+		
+		//servletcontext
+		ServletContext context = ServletActionContext.getServletContext();
+		context.setAttribute("c_books", books);
+	
+	注意：	
+	 优势：
+		1）可以使用回以前servlet中的类
+		2）可以通过原生的request对象获取用户的浏览器的信息
+	缺点：
+		1）依赖了servlet的api，而strut2并不建议使用servlet的api
+
+	2.使用struts2提供的三个Map集合对象来共享数据
+
+	     RequestMap - 封装了HttpServletRequest对象
+	     SessionMap - 封装了HttpSession对象
+	     ApplicationMap - 封装了ServletContext对象
+			
+		
+	好处：
+		1）不依赖于servlet的api，可以更加方便地去测试action类
+		2）给jsp页面共享更多的数据
+	缺点：
+		1）Action类中的每个方法都必须重新获取Map集合才能共享数据
+
+		
+		
+			//把数据共享到jsp显示
+		//得到ActionContext对象
+		ActionContext ac = ActionContext.getContext();
+		
+		//RequestMap集合
+		Map rmap = (Map)ac.get("request");
+		rmap.put("r_books", books);
+		
+		//SessionMap集合
+		Map smap = ac.getSession();
+		smap.put("s_books", books);
+		
+		//ApplicationMap集合
+		Map cmap = ac.getApplication();
+		cmap.put("c_books", books);
+
+	3.采用全局的方法获取Map集合共享数据
+		
+	分别实现三个接口：RequestAware,SessionAware, ApplicationAware
+
+	private Map requestMap = null;
+	private Map sessionMap = null;
+	private Map applicationMap = null;
+
+	// 把RequestMap对象传入Action
+	public void setRequest(Map<String, Object> request) {
+		this.requestMap = request;
+	}
+
+	// 把SessionMap对象传入Action
+	public void setSession(Map<String, Object> session) {
+		this.sessionMap = session;
+	}
+
+	// 把ApplicationMap传入Action
+	public void setApplication(Map<String, Object> application) {
+		this.applicationMap = application;
+	}
+
+	好处：
+	1）不依赖servlet的api
+	2）可以在Action的任何方法去使用Map集合共享数据
+
+	
+	
+		练习：
+		
+		1）编写一个BookAction，完成以下需求：
+			1.1 接收以下注册表单数据
+			图书信息：
+
+		        书名
+		        作者
+		        原价
+		        折扣
+		        出版社
+		        出版时间
+
+			保存图书数据
+				
+			1.2 图书保存成功后，列出图书的信息（图书数据暂时在内存模拟即可！无需保存数据库）
+		
+		
+			
+
+	
+		
+			
+		
+
+
+
+
+
+
